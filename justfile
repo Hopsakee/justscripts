@@ -28,3 +28,8 @@ list-scripts:
 # Usage: just run <script_name> [args...]
 run SCRIPT *ARGS:
     uv run scripts/{{SCRIPT}}.py {{ARGS}}
+
+# Resize PNG images by a given factor
+resize-images factor *files:
+    cd {{invocation_directory_native()}} && uv run '{{home_dir()}}/justscripts/scripts/resize_images.py' {{factor}} {{files}}
+
