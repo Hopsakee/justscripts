@@ -17,8 +17,8 @@ from PIL import Image
 
 def main():
     if len(sys.argv) < 2:
-        print("Usage: python image_info.py <image_path>")
-        print("\nExample: python image_info.py example.jpg")
+        print("Usage: uv run scripts/image_info.py <image_path>")
+        print("\nExample: uv run scripts/image_info.py example.jpg")
         sys.exit(1)
     
     image_path = Path(sys.argv[1])
@@ -33,7 +33,7 @@ def main():
             print(f"  Format: {img.format}")
             print(f"  Mode: {img.mode}")
             print(f"  Size: {img.size[0]}x{img.size[1]} pixels")
-            if hasattr(img, 'info'):
+            if img.info:
                 print(f"  Additional info: {img.info}")
     except Exception as e:
         print(f"Error reading image: {e}")

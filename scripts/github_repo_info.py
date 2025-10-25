@@ -16,8 +16,8 @@ import requests
 
 def main():
     if len(sys.argv) < 2:
-        print("Usage: python github_repo_info.py <owner/repo>")
-        print("\nExample: python github_repo_info.py python/cpython")
+        print("Usage: uv run scripts/github_repo_info.py <owner/repo>")
+        print("\nExample: uv run scripts/github_repo_info.py python/cpython")
         sys.exit(1)
     
     repo_path = sys.argv[1]
