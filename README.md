@@ -4,7 +4,7 @@ A repository containing self-contained Python scripts that can be run using `uv`
 
 ## Overview
 
-This repository contains Python scripts that use [uv](https://docs.astral.sh/uv/)'s inline script metadata feature (PEP 723). Each script declares its own dependencies directly in the file, making them completely self-contained and easy to run without manual dependency management.
+This repository contains Python scripts that use [uv](https://docs.astral.sh/uv/)'s inline script metadata feature (PEP 723). Each script declares its own dependencies directly in the file, making them completely self-contained and easy to run without manual dependency management. The scripts can be run using `uv run` or `just` through a `justfile`.
 
 ## Prerequisites
 
@@ -18,16 +18,31 @@ This repository contains Python scripts that use [uv](https://docs.astral.sh/uv/
   ```
 
 - **just** (optional but recommended): Install from [https://just.systems/](https://just.systems/)
+  There are multiple ways to install `just`. See [Just Programmers Manual - Introduction](https://just.systems/man/en/packages.html).
+
+  For example:
   ```bash
-  # On macOS
-  brew install just
-  
-  # On Linux
-  curl --proto '=https' --tlsv1.2 -sSf https://just.systems/install.sh | bash -s -- --to ~/bin
-  
-  # On Windows
-  choco install just
+  # Cross platform macOS
+  npm install -g rust-just
   ```
+
+## Installation
+
+Clone the repository to your home directory.
+_(it is possible to clone to any directory, but this is the recommended location because the provided `justfile` expect the repository to be in your home directory)_
+
+```bash
+cd ~
+git clone git@github.com:Hopsakee/justscripts.git
+# or
+git clone https://github.com/Hopsakee/justscripts.git
+```
+
+Then copy the `justfile` to your home directory:
+```bash
+cd ~/justscripts
+cp justfile ~
+```
 
 ## Usage
 
@@ -37,10 +52,10 @@ All scripts can be run directly with `uv`:
 
 ```bash
 # Run a simple script
-uv run scripts/hello_world.py
+uv run ~/justscripts/scripts/hello_world.py
 
 # Run a script with dependencies
-uv run scripts/image_info.py path/to/image.jpg
+uv run ~/justscripts/scripts/image_info.py path/to/image.jpg
 ```
 
 The first time you run a script, `uv` will automatically:
@@ -70,65 +85,25 @@ just run hello_world
 just run image_info path/to/image.jpg
 ```
 
-### Using from your home directory or project
-
-You can copy the `justfile` to your WSL home directory or Python project root, then add recipes that reference scripts from this repository:
-
-```bash
-# Copy justfile to your home directory
-cp justfile ~/justfile
-
-# Edit ~/justfile and add custom recipes
-# For example:
-# image-info IMAGE_PATH:
-#     uv run /path/to/justscripts/scripts/image_info.py {{IMAGE_PATH}}
-```
-
 ## Adding New Scripts
 
 To add a new script to this repository:
 
 1. Create a new Python file in the `scripts/` directory
-2. Add the uv shebang and inline metadata at the top:
-
-```python
-#!/usr/bin/env -S uv run
-# /// script
-# requires-python = ">=3.10"
-# dependencies = [
-#   "requests",
-#   "beautifulsoup4",
-# ]
-# ///
-"""
-Your script description here.
-"""
-
-def main():
-    # Your code here
-    pass
-
-if __name__ == "__main__":
-    main()
-```
-
+2. Add the uv shebang and inline metadata at the top of the file. You can use the [Script Template](#script-template) as a reference.
 3. Make the script executable:
+
 ```bash
-chmod +x scripts/your_script.py
+chmod +x ~/justscripts/scripts/your_script.py
 ```
 
 4. (Optional) Add a recipe to the `justfile`:
+
 ```bash
 # Run your custom script
 your-script:
-    uv run scripts/your_script.py
+    uv run ~/justscripts/scripts/your_script.py
 ```
-
-## Available Scripts
-
-- **hello_world.py**: Simple hello world script with no dependencies
-- **image_info.py**: Display information about an image file (uses Pillow)
-- **github_repo_info.py**: Fetch and display GitHub repository information (uses requests)
 
 ## Script Template
 
@@ -140,14 +115,14 @@ Here's a template for creating new scripts:
 # requires-python = ">=3.10"
 # dependencies = [
 #   # Add your dependencies here
+#   "beautifulsoup4",
 # ]
 # ///
 """
 Script description.
 """
 
-import sys
-
+from bs4 import BeautifulSoup
 
 def main():
     # Your code here
