@@ -3,33 +3,37 @@
 
 # Default recipe - shows available commands
 default:
-    @just --list
+  @just --list
 
 # Run the hello world script
 hello:
-    uv run scripts/hello_world.py
+  uv run '{{home_dir()}}/justscripts/scripts/hello_world.py'
 
 # Run the image info script with an image path
 # Usage: just image-info <path_to_image>
 image-info IMAGE_PATH:
-    uv run scripts/image_info.py {{IMAGE_PATH}}
+  uv run '{{home_dir()}}/justscripts/scripts/image_info.py {{IMAGE_PATH}}
 
 # Get GitHub repository information
 # Usage: just github-info <owner/repo>
 github-info REPO:
-    uv run scripts/github_repo_info.py {{REPO}}
+  uv run '{{home_dir()}}/justscripts/scripts/github_repo_info.py {{REPO}}'
 
 # List all available scripts
 list-scripts:
-    @echo "Available scripts:"
-    @ls -1 scripts/*.py | sed 's|scripts/||' | sed 's|\.py$||'
+  @echo "Available scripts:"
+  @ls -1 {{home_dir()}}/justscripts/scripts/*.py | sed 's|scripts/||' | sed 's|\.py$||'
 
 # Run any script by name (without .py extension)
 # Usage: just run <script_name> [args...]
 run SCRIPT *ARGS:
-    uv run scripts/{{SCRIPT}}.py {{ARGS}}
+  uv run '{{home_dir()}}/justscripts/scripts/{{SCRIPT}}.py' {{ARGS}}
 
 # Resize PNG images by a given factor
 resize-images factor *files:
-    cd {{invocation_directory_native()}} && uv run '{{home_dir()}}/justscripts/scripts/resize_images.py' {{factor}} {{files}}
+  cd {{invocation_directory_native()}} && uv run '{{home_dir()}}/justscripts/scripts/resize_images.py' {{factor}} {{files}}
 
+# Convert a Markdown file to PDF
+# Usage: just md2pdf <file.md>
+md2pdf FILE:
+  {{home_dir()}}/justscripts/scripts/md2pdf.sh {{FILE}}

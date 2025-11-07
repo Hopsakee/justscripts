@@ -85,6 +85,50 @@ just run hello_world
 just run image_info path/to/image.jpg
 ```
 
+### Using from your home directory or project
+
+`just` runs recipes from the directory that contains the `justfile` (the working directory). If you invoke `just` from a subdirectory, it still executes recipes from the `justfile`'s directory. See: https://just.systems/man/en/working-directory.html
+
+- **Where paths are resolved**
+  - Relative paths in recipes are resolved relative to the `justfile`'s directory.
+  - If you copy the `justfile` elsewhere, you must first update its recipe paths to point to the scripts in this repo (use absolute paths or `{{home_dir()}}`). Running commands before editing paths will fail.
+
+- **Run from this repository**
+  - `just image-info path/to/image.jpg`
+  - Recipe paths like `scripts/image_info.py` are relative to the repo root, so `./scripts/...` works when the `justfile` lives here.
+
+  - Copy the `justfile`, then edit it to reference scripts with `{{home_dir()}}` (preferred) or absolute paths:
+  ```bash
+  cp justfile ~/justfile
+  ```
+  Edit `~/justfile` and add/update recipes, e.g.:
+  ```just
+  image-info IMAGE_PATH:
+    uv run {{home_dir()}}/justscripts/scripts/image_info.py {{IMAGE_PATH}}
+  ```
+  Usage (from anywhere):
+  ```bash
+  just image-info ~/Pictures/photo.jpg
+  ```
+
+- **Use in a specific project**
+  - Place a `justfile` in your project root. Since the working directory is the project root, reference this repo with `{{home_dir()}}` or absolute paths:
+  ```just
+  # project/justfile
+  image-info IMAGE_PATH:
+    uv run {{home_dir()}}/justscripts/scripts/image_info.py {{IMAGE_PATH}}
+  hello:
+    uv run {{home_dir()}}/justscripts/scripts/hello_world.py
+  ```
+  Then run inside your project:
+  ```bash
+  just image-info data/img.jpg
+  just hello
+  ```
+
+- **Tip: keep things portable**
+  - Prefer `{{home_dir()}}/justscripts/scripts/...` when your `justfile` is not inside this repo.
+  - If you want to stay relative, keep the `justfile` in this repo and run `just` from anywhere under it; `just` will execute from the repo root.
 ## Adding New Scripts
 
 To add a new script to this repository:
