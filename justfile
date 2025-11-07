@@ -12,12 +12,12 @@ hello:
 # Run the image info script with an image path
 # Usage: just image-info <path_to_image>
 image-info IMAGE_PATH:
-  uv run '{{home_dir()}}/justscripts/scripts/image_info.py {{IMAGE_PATH}}
+  uv run '{{home_dir()}}/justscripts/scripts/image_info.py' {{IMAGE_PATH}}
 
 # Get GitHub repository information
 # Usage: just github-info <owner/repo>
 github-info REPO:
-  uv run '{{home_dir()}}/justscripts/scripts/github_repo_info.py {{REPO}}'
+  uv run '{{home_dir()}}/justscripts/scripts/github_repo_info.py' {{REPO}}
 
 # List all available scripts
 list-scripts:
