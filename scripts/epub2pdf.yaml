@@ -1,0 +1,7 @@
+pdf-engine: xelatex
+variables:
+  papersize: a5
+  geometry: margin=1.5cm
+  mainfont: "DejaVu Serif"
+  fontsize: 11pt
+  linestretch: 1.2

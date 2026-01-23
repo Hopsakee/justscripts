@@ -1,5 +1,9 @@
 #!/usr/bin/env bash
 # Convert epub to PDF using pandoc
+# Using 'xelatex' enging because it supports more Unicode characters
+#   than the default 'pdflatex'
+
+SCRIPT_DIR="$(dirname "$0")"
 
 # check if a variable is given
 if [ -z "$1" ]; then
@@ -22,7 +26,7 @@ if [ -d "$1" ]; then
     fi
     echo "Converting all files in directory '$1'"
     for f in "$1"/*.epub; do
-	pandoc "$f" -o "${f%.epub}.pdf"
+	pandoc "$f" -o "${f%.epub}.pdf" -d "$SCRIPT_DIR/epub2pdf.yaml" --pdf-engine-opt=-interaction=nonstopmode
 	done
     exit
 fi
@@ -34,4 +38,4 @@ if [[ ! "$1" == *.epub ]]; then
 fi
 
 # convert
-pandoc "$1" -o "${1%.epub}.pdf"
+pandoc "$1" -o "${1%.epub}.pdf" -d "$SCRIPT_DIR/epub2pdf.yaml" --pdf-engine-opt=-interaction=nonstopmode

@@ -12,7 +12,7 @@ hello:
 # Run the image info script with an image path
 # Usage: just image-info <path_to_image>
 image-info IMAGE_PATH:
-  uv run '{{home_dir()}}/justscripts/scripts/image_info.py' {{IMAGE_PATH}}
+  uv run '{{home_dir()}}/justscripts/scripts/image_info.py' "{{IMAGE_PATH}}"
 
 # Get GitHub repository information
 # Usage: just github-info <owner/repo>
@@ -27,7 +27,7 @@ list-scripts:
 # Run any script by name (without .py extension)
 # Usage: just run <script_name> [args...]
 run SCRIPT *ARGS:
-  uv run '{{home_dir()}}/justscripts/scripts/{{SCRIPT}}.py' {{ARGS}}
+  uv run '{{home_dir()}}/justscripts/scripts/{{SCRIPT}}.py' "{{ARGS}}"
 
 # Resize PNG images by a given factor
 resize-images factor *files:
@@ -36,4 +36,10 @@ resize-images factor *files:
 # Convert a Markdown file to PDF
 # Usage: just md2pdf <file.md>
 md2pdf FILE:
-  {{home_dir()}}/justscripts/scripts/md2pdf.sh {{FILE}}
+  {{home_dir()}}/justscripts/scripts/md2pdf.sh "{{FILE}}"
+
+# Convert a epub file to PDF
+# Usage: just epub2pdf <file.epub>
+# Usage: just epub2pdf <directory>
+epub2pdf ARG:
+  {{home_dir()}}/justscripts/scripts/epub2pdf.sh "{{ARG}}"

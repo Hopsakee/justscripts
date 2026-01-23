@@ -4,7 +4,7 @@ Thank you for your interest in contributing to justscripts! This guide will help
 
 ## Adding a New Script
 
-### 1. Create Your Script
+### Python Scripts
 
 Create a new Python file in the `scripts/` directory with the following structure:
 
@@ -34,30 +34,78 @@ if __name__ == "__main__":
     main()
 ```
 
-### 2. Script Guidelines
+### Bash Scripts
+
+Create a new bash file in the `scripts/` directory with the following structure:
+
+```bash
+#!/usr/bin/env bash
+# Brief description of what your script does
+
+# Check arguments
+if [ -z "$1" ]; then
+    echo "Usage: script_name <argument>"
+    exit 1
+fi
+
+# Your code here
+```
+
+**Bash-specific guidelines:**
+
+- External dependencies (e.g., `pandoc`, `ffmpeg`) must be installed separately
+- Store configuration files (YAML, etc.) alongside the script
+- Use `SCRIPT_DIR="$(dirname "$0")"` to reference config files relative to the script location
+
+## General Guidelines
 
 - **Shebang**: Always start with `#!/usr/bin/env -S uv run`
-- **Metadata**: Include the `# /// script` block with dependencies
 - **Documentation**: Add a docstring explaining what the script does
 - **Error Handling**: Handle errors gracefully and provide helpful error messages
 - **Usage Info**: If the script takes arguments, print usage information when run incorrectly
 - **Exit Codes**: Use appropriate exit codes (0 for success, non-zero for errors)
 
-### 3. Make It Executable
+## Make It Executable
+
+**bash**
+
+```bash
+chmod +x scripts/your_script.sh
+```
+
+or
+
+**python**
 
 ```bash
 chmod +x scripts/your_script.py
 ```
 
-### 4. Test Your Script
+## (Optional) Add a Justfile Recipe
 
-Test your script locally with uv:
+If your script would benefit from a dedicated recipe, add it to the `justfile`:
 
-```bash
-uv run scripts/your_script.py [arguments]
+**bash**
+
+```just
+# Description of what the recipe does
+recipe-name ARG:
+    {{home_dir()}}/justscripts/scripts/your_script.sh "{{ARG}}"
 ```
 
-### 5. Update Documentation
+**python**
+
+```just
+# Description of what the recipe does
+# Usage: just recipe-name <args>
+recipe-name ARG:
+    uv run {{home_dir()}}/justscripts/scripts/your_script.py "{{ARG}}"
+```
+
+_Note: Always quote `"{{ARG}}"` to handle paths with spaces._
+
+
+## Update Documentation
 
 Add your script to the "Available Scripts" section in `README.md`:
 
@@ -65,18 +113,8 @@ Add your script to the "Available Scripts" section in `README.md`:
 - **your_script.py**: Brief description of what it does (list key dependencies)
 ```
 
-### 6. (Optional) Add a Justfile Recipe
 
-If your script would benefit from a dedicated recipe, add it to the `justfile`:
-
-```just
-# Description of what the recipe does
-# Usage: just recipe-name <args>
-recipe-name ARG:
-    uv run scripts/your_script.py {{ARG}}
-```
-
-### 7. Submit a Pull Request
+## Submit a Pull Request
 
 1. Fork the repository
 2. Create a new branch for your script
