@@ -1,0 +1,12 @@
+pdf-engine: xelatex
+variables:
+  papersize: a4
+  geometry: margin=2.5cm
+  mainfont: "DejaVu Sans"
+  sansfont: "DejaVu Sans"
+  monofont: "DejaVu Sans Mono"
+  fontsize: 11pt
+  linestretch: 1.25
+  colorlinks: true
+  linkcolor: "Blue"
+  urlcolor: "Blue"

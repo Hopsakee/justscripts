@@ -33,10 +33,11 @@ run SCRIPT *ARGS:
 resize-images factor *files:
   cd {{invocation_directory_native()}} && uv run '{{home_dir()}}/justscripts/scripts/resize_images.py' {{factor}} {{files}}
 
-# Convert a Markdown file to PDF
-# Usage: just md2pdf <file.md>
-md2pdf FILE:
-  {{home_dir()}}/justscripts/scripts/md2pdf.sh "{{FILE}}"
+# Convert a Markdown file to PDF with a selectable layout (default: a4-work)
+# Usage: just md2pdf <file.md> [layout]
+# Available layouts: a4-work (default), a4-personal, boox
+md2pdf FILE LAYOUT="a4-work":
+  {{home_dir()}}/justscripts/scripts/md2pdf.sh "{{FILE}}" "{{LAYOUT}}"
 
 # Convert a epub file to PDF
 # Usage: just epub2pdf <file.epub>

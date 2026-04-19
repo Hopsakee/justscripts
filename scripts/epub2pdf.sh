@@ -4,6 +4,7 @@
 #   than the default 'pdflatex'
 
 SCRIPT_DIR="$(dirname "$0")"
+LAYOUT_CONFIG="$SCRIPT_DIR/../pdf-layouts/boox.yaml"
 
 # check if a variable is given
 if [ -z "$1" ]; then
@@ -26,7 +27,7 @@ if [ -d "$1" ]; then
     fi
     echo "Converting all files in directory '$1'"
     for f in "$1"/*.epub; do
-	pandoc "$f" -o "${f%.epub}.pdf" -d "$SCRIPT_DIR/epub2pdf.yaml" --pdf-engine-opt=-interaction=nonstopmode
+	pandoc "$f" -o "${f%.epub}.pdf" -d "$LAYOUT_CONFIG" --pdf-engine-opt=-interaction=nonstopmode
 	done
     exit
 fi
@@ -38,4 +39,4 @@ if [[ ! "$1" == *.epub ]]; then
 fi
 
 # convert
-pandoc "$1" -o "${1%.epub}.pdf" -d "$SCRIPT_DIR/epub2pdf.yaml" --pdf-engine-opt=-interaction=nonstopmode
+pandoc "$1" -o "${1%.epub}.pdf" -d "$LAYOUT_CONFIG" --pdf-engine-opt=-interaction=nonstopmode
