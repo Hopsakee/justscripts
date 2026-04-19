@@ -129,6 +129,25 @@ just run image_info path/to/image.jpg
 - **Tip: keep things portable**
   - Prefer `{{home_dir()}}/justscripts/scripts/...` when your `justfile` is not inside this repo.
   - If you want to stay relative, keep the `justfile` in this repo and run `just` from anywhere under it; `just` will execute from the repo root.
+
+## Repository Structure
+
+- `scripts/` — the scripts themselves (Python + Bash).
+- `pdf-layouts/` — shared pandoc "defaults" files that control the complete PDF layout (paper size, margins, fonts, line spacing, link colour, etc.). Used by both `md2pdf.sh` and `epub2pdf.sh`. Drop a new `name.yaml` here to create a new layout.
+- `documentation/` — optional per-script markdown docs for scripts that need more explanation than fits in their own comments. Reference the file from the "Available Scripts" table below.
+
+## Available Scripts
+
+| Script | Purpose | Docs |
+|---|---|---|
+| [hello_world.py](scripts/hello_world.py) | Template / smoke test | — |
+| [image_info.py](scripts/image_info.py) | Print image metadata | — |
+| [github_repo_info.py](scripts/github_repo_info.py) | Print GitHub repository stats | — |
+| [resize_images.py](scripts/resize_images.py) | Bulk-resize PNGs by a factor | — |
+| [md2pdf.sh](scripts/md2pdf.sh) | Markdown → PDF with a selectable layout (`a4-work` default, `a4-personal`, `boox`) | [md2pdf.md](documentation/md2pdf.md) |
+| [epub2pdf.sh](scripts/epub2pdf.sh) | EPUB → PDF using the `boox` layout | — |
+| [docx_c.sh](scripts/docx_c.sh) | DOCX → PDF (or Markdown) via pandoc | — |
+
 ## Adding New Scripts
 
 To add a new script to this repository:
