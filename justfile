@@ -44,3 +44,8 @@ md2pdf FILE LAYOUT="a4-work":
 # Usage: just epub2pdf <directory>
 epub2pdf ARG:
   {{home_dir()}}/justscripts/scripts/epub2pdf.sh "{{ARG}}"
+
+# Extract a PDF to <name>_text.md via pymupdf4llm (Tier 1)
+# Usage: just pdf-extract <file.pdf> [--force] [--dry-run]
+pdf-extract PDF *FLAGS:
+  uv run '{{home_dir()}}/justscripts/scripts/pdf_extract.py' "{{PDF}}" {{FLAGS}}

@@ -147,6 +147,7 @@ just run image_info path/to/image.jpg
 | [md2pdf.sh](scripts/md2pdf.sh) | Markdown → PDF with a selectable layout (`a4-work` default, `a4-personal`, `boox`) | [md2pdf.md](documentation/md2pdf.md) |
 | [epub2pdf.sh](scripts/epub2pdf.sh) | EPUB → PDF using the `boox` layout | — |
 | [docx_c.sh](scripts/docx_c.sh) | DOCX → PDF (or Markdown) via pandoc | — |
+| [pdf_extract.py](scripts/pdf_extract.py) | PDF → `<name>_text.md` via pymupdf4llm (Tier 1 extractor for pkw-librarian) | — |
 
 ## Adding New Scripts
 
