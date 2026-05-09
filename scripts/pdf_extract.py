@@ -9,7 +9,9 @@
 Tier 1 PDF extraction: convert a PDF to a markdown sidecar with headings preserved.
 
 Reads <pdf-path> via pymupdf4llm and writes <pdf-path-without-extension>_text.md
-next to it. Skips if the sidecar is already newer than the PDF (mtime cache).
+next to it. Pages are joined with form-feed (\\f) so downstream tools can recover
+page boundaries for quote attribution. Skips if the sidecar is already newer than
+the PDF (mtime cache).
 
 Usage:
   pdf_extract.py <pdf-path> [--force] [--dry-run]
@@ -65,7 +67,8 @@ def main() -> int:
         print(f"skip (cached): {target}")
         return 0
 
-    markdown = pymupdf4llm.to_markdown(str(pdf))
+    chunks = pymupdf4llm.to_markdown(str(pdf), page_chunks=True)
+    markdown = "\f".join(chunk["text"] for chunk in chunks)
     target.write_text(markdown, encoding="utf-8")
     print(f"wrote: {target}")
     return 0
