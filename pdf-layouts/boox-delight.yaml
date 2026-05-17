@@ -1,0 +1,15 @@
+pdf-engine: xelatex
+# Sibling boox-delight.tex is auto-loaded by md2pdf.sh via --include-in-header.
+variables:
+  papersize: a5
+  geometry: margin=1.5cm
+  documentclass: article
+  fontsize: 10pt
+  linestretch: 1.30
+  mainfont: "DejaVu Serif"
+  sansfont: "DejaVu Sans"
+  monofont: "DejaVu Sans Mono"
+  colorlinks: true
+  linkcolor: "boxnavy"
+  urlcolor: "boxteal"
+  toccolor: "boxnavy"
