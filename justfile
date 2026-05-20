@@ -39,11 +39,11 @@ resize-images factor *files:
 md2pdf FILE LAYOUT="a4-work":
   {{home_dir()}}/justscripts/scripts/md2pdf.sh "{{FILE}}" "{{LAYOUT}}"
 
-# Convert an epub file (or every *.epub in a directory) to PDF with a selectable layout (default: boox)
+# Convert an epub file (or every *.epub in a directory) to PDF with a selectable layout (default: boox-delight)
 # Usage: just epub2pdf <file.epub> [layout]
 # Usage: just epub2pdf <directory>  [layout]
-# Available layouts: boox (default), boox-delight, a4-work, a4-personal
-epub2pdf ARG LAYOUT="boox":
+# Available layouts: boox-delight (default), boox, a4-work, a4-personal
+epub2pdf ARG LAYOUT="boox-delight":
   {{home_dir()}}/justscripts/scripts/epub2pdf.sh "{{ARG}}" "{{LAYOUT}}"
 
 # Extract a PDF to <name>_text.md via pymupdf4llm (Tier 1)
