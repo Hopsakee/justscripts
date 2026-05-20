@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Convert epub to PDF using pandoc with a selectable layout profile.
-# Usage: epub2pdf <file.epub> [layout]              (default: boox)
+# Usage: epub2pdf <file.epub> [layout]              (default: boox-delight)
 # Usage: epub2pdf <directory>  [layout]             (converts every *.epub in dir)
 # Layouts live in ../pdf-layouts/*.yaml
 #
@@ -27,7 +27,7 @@ list_layouts() {
 }
 
 if [ -z "$1" ]; then
-    echo "Usage: epub2pdf <file.epub> [layout]    (default: boox)"
+    echo "Usage: epub2pdf <file.epub> [layout]    (default: boox-delight)"
     echo "Usage: epub2pdf <directory>  [layout]   (converts every *.epub in dir)"
     echo "Available layouts:"
     list_layouts | sed 's/^/  /'
@@ -35,7 +35,7 @@ if [ -z "$1" ]; then
 fi
 
 INPUT="$1"
-LAYOUT="${2:-boox}"
+LAYOUT="${2:-boox-delight}"
 CONFIG="$LAYOUTS_DIR/${LAYOUT}.yaml"
 
 if [ ! -f "$CONFIG" ]; then
