@@ -17,10 +17,21 @@
 -- token (so bold labels don't overrun), while still proportional to content.
 --
 -- Skipped when widths are already set (any column with width > 0).
+--
+-- Wide-table rotation (added 2026-05-19):
+--   When the pre-normalize sum of widths exceeds 1.0 — meaning even with the
+--   longest-word floors the table demands more than full portrait page width —
+--   OR when column count meets ROTATE_COLS_THRESHOLD, the filter wraps the
+--   Table in \begin{landscape}...\end{landscape} (pdflscape) so the rendered
+--   page rotates 90° and the columns get the wider landscape canvas. The
+--   width rebalance still runs inside the landscape wrap; relative widths
+--   stay valid because they're proportions, not absolute lengths. Requires
+--   the sibling boox-delight.tex preamble to load \usepackage{pdflscape}.
 
-local CHARS_PER_LINE = 60   -- approx chars per A5 line at 9.5pt; tweak if needed
-local FLOOR_CHARS    = 4    -- absolute minimum column width in chars
-local stringify      = pandoc.utils.stringify
+local CHARS_PER_LINE         = 60   -- approx chars per A5 line at 9.5pt; tweak if needed
+local FLOOR_CHARS            = 4    -- absolute minimum column width in chars
+local ROTATE_COLS_THRESHOLD  = 4    -- tables with ≥ N columns auto-rotate to landscape
+local stringify              = pandoc.utils.stringify
 
 local function cell_text(cell)
   if type(cell) ~= "table" then return tostring(cell or "") end
@@ -100,6 +111,11 @@ function Table(tbl)
     sum_widths = sum_widths + widths[i]
   end
 
+  -- 2b. wide-table decision (BEFORE renormalize, so sum_widths still reflects
+  -- the true content+floor demand). Wide = either many columns OR the floored
+  -- demand already exceeds portrait page width.
+  local is_wide = (n >= ROTATE_COLS_THRESHOLD) or (sum_widths > 1.0)
+
   -- 3. renormalize so total = 1.0
   if sum_widths >= 1.0 then
     -- over-budget: scale proportionally
@@ -117,5 +133,15 @@ function Table(tbl)
     spec[2] = widths[i]
   end
   tbl.colspecs = colspecs
+
+  -- 5. wrap in landscape env if wide. Returning a Blocks list replaces the
+  -- single Table node with three nodes in document order.
+  if is_wide then
+    return {
+      pandoc.RawBlock("latex", "\\begin{landscape}"),
+      tbl,
+      pandoc.RawBlock("latex", "\\end{landscape}"),
+    }
+  end
   return tbl
 end

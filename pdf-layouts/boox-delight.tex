@@ -81,6 +81,13 @@
 \renewcommand{\arraystretch}{1.15}
 \setlength{\tabcolsep}{4pt}
 
+% Wide-table rotation: pdflscape provides the `landscape` env AND sets the PDF
+% /Rotate metadata so e-readers (Boox Note Air 3C) auto-rotate the rendered
+% page. Triggered from the sibling Lua filter `lua/boox-delight/table-widths.lua`,
+% which emits \begin{landscape}...\end{landscape} around any table whose
+% rebalanced column widths would otherwise exceed portrait page width.
+\usepackage{pdflscape}
+
 % Minimal header / footer — page number bottom center in slate
 \usepackage{fancyhdr}
 \pagestyle{fancy}
