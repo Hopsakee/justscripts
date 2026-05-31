@@ -2,7 +2,7 @@
 # Convert any source to PDF using pandoc with a selectable layout profile.
 # Collapses the former md2pdf.sh + epub2pdf.sh into one tool.
 #
-# Usage: 2pdf <source> [layout]    (default layout: a4-work)
+# Usage: 2pdf <source> [layout]    (default layout: boox-delight)
 #   <source> may be:
 #     - a Markdown file  (.md / .markdown)
 #     - an EPUB file     (.epub)
@@ -35,7 +35,7 @@ list_layouts() {
 }
 
 usage() {
-    echo "Usage: 2pdf <source> [layout]    (default layout: a4-work)"
+    echo "Usage: 2pdf <source> [layout]    (default layout: boox-delight)"
     echo "  <source>: a .md/.markdown, .epub, .html/.htm file, an http(s) URL, or a directory of those"
     echo "Available layouts:"
     list_layouts | sed 's/^/  /'
@@ -47,7 +47,7 @@ if [ -z "$1" ]; then
 fi
 
 SOURCE="$1"
-LAYOUT="${2:-a4-work}"
+LAYOUT="${2:-boox-delight}"
 CONFIG="$LAYOUTS_DIR/${LAYOUT}.yaml"
 
 if [ ! -f "$CONFIG" ]; then

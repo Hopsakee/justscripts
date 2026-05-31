@@ -4,11 +4,11 @@ Convert any source to PDF using [pandoc](https://pandoc.org/) and a selectable l
 `2pdf.sh` collapses the former `md2pdf.sh` and `epub2pdf.sh` into a single tool and adds HTML/URL support.
 
 ```bash
-just to-pdf path/to/file.md                  # Markdown,  default layout: a4-work
-just to-pdf path/to/file.md a4-personal      # Markdown,  A4 serif
-just to-pdf path/to/book.epub boox-delight   # EPUB,      Boox editorial layout
+just to-pdf path/to/book.epub                # default layout: boox-delight
+just to-pdf path/to/file.md a4-work          # Markdown, A4 to share with colleagues
+just to-pdf path/to/file.md a4-personal      # Markdown, A4 serif
 just to-pdf path/to/page.html boox-delight   # local HTML file
-just to-pdf https://example.com/article.html boox-delight   # remote URL (fetched as HTML)
+just to-pdf https://example.com/article.html # remote URL (fetched as HTML), default boox-delight
 just to-pdf path/to/dir/ boox                # batch: every supported file in the directory
 ```
 
@@ -40,10 +40,10 @@ font size, line height, link colour, etc.
 
 | Layout | Paper | Font | Use case |
 |---|---|---|---|
-| `a4-work` (default) | A4 | DejaVu Sans | Documents to share with colleagues |
-| `a4-personal` | A4 | DejaVu Serif | Personal long-form reading at A4 |
+| `boox-delight` (default) | A5 | DejaVu Serif | Boox Note Air 3C ereader — editorial palette, colored headings, code panels, wide-table auto-rotation |
 | `boox` | A5 | DejaVu Serif | Boox Note Air 3C ereader (minimal) |
-| `boox-delight` | A5 | DejaVu Serif | Boox Note Air 3C ereader — editorial palette, colored headings, code panels, wide-table auto-rotation |
+| `a4-work` | A4 | DejaVu Sans | Documents to share with colleagues |
+| `a4-personal` | A4 | DejaVu Serif | Personal long-form reading at A4 |
 
 For each selected layout, `2pdf.sh` auto-discovers, in order:
 

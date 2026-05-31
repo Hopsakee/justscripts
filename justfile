@@ -36,9 +36,9 @@ resize-images factor *files:
 # Convert any source (Markdown, EPUB, HTML file, or http(s) URL) to PDF with a selectable layout.
 # Also accepts a directory: batch-converts every supported file inside it.
 # (Recipe name is "to-pdf" because just recipe names cannot start with a digit; the script is 2pdf.sh.)
-# Usage: just to-pdf <file|url|dir> [layout]    (default: a4-work)
-# Available layouts: a4-work (default), a4-personal, boox, boox-delight
-to-pdf SOURCE LAYOUT="a4-work":
+# Usage: just to-pdf <file|url|dir> [layout]    (default: boox-delight)
+# Available layouts: boox-delight (default), boox, a4-work, a4-personal
+to-pdf SOURCE LAYOUT="boox-delight":
   {{home_dir()}}/justscripts/scripts/2pdf.sh "{{SOURCE}}" "{{LAYOUT}}"
 
 # Extract a PDF to <name>_text.md via pymupdf4llm (Tier 1)

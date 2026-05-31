@@ -144,7 +144,7 @@ just run image_info path/to/image.jpg
 | [image_info.py](scripts/image_info.py) | Print image metadata | — |
 | [github_repo_info.py](scripts/github_repo_info.py) | Print GitHub repository stats | — |
 | [resize_images.py](scripts/resize_images.py) | Bulk-resize PNGs by a factor | — |
-| [2pdf.sh](scripts/2pdf.sh) | Any source (Markdown, EPUB, HTML file, http(s) URL, or a directory of those) → PDF with a selectable layout (`a4-work` default, `a4-personal`, `boox`, `boox-delight`). Recipe: `just to-pdf`. | [2pdf.md](documentation/2pdf.md) |
+| [2pdf.sh](scripts/2pdf.sh) | Any source (Markdown, EPUB, HTML file, http(s) URL, or a directory of those) → PDF with a selectable layout (`boox-delight` default, `boox`, `a4-work`, `a4-personal`). Recipe: `just to-pdf`. | [2pdf.md](documentation/2pdf.md) |
 | [docx_c.sh](scripts/docx_c.sh) | DOCX → PDF (or Markdown) via pandoc | — |
 | [pdf_extract.py](scripts/pdf_extract.py) | PDF → `<name>_text.md` via pymupdf4llm (Tier 1 extractor for pkw-librarian) | — |
 
