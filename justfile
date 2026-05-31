@@ -33,17 +33,13 @@ run SCRIPT *ARGS:
 resize-images factor *files:
   cd {{invocation_directory_native()}} && uv run '{{home_dir()}}/justscripts/scripts/resize_images.py' {{factor}} {{files}}
 
-# Convert a Markdown file to PDF with a selectable layout (default: a4-work)
-# Usage: just md2pdf <file.md> [layout]
-# Available layouts: a4-work (default), a4-personal, boox
-md2pdf FILE LAYOUT="a4-work":
-  {{home_dir()}}/justscripts/scripts/md2pdf.sh "{{FILE}}" "{{LAYOUT}}"
-
-# Convert a epub file to PDF
-# Usage: just epub2pdf <file.epub>
-# Usage: just epub2pdf <directory>
-epub2pdf ARG:
-  {{home_dir()}}/justscripts/scripts/epub2pdf.sh "{{ARG}}"
+# Convert any source (Markdown, EPUB, HTML file, or http(s) URL) to PDF with a selectable layout.
+# Also accepts a directory: batch-converts every supported file inside it.
+# (Recipe name is "to-pdf" because just recipe names cannot start with a digit; the script is 2pdf.sh.)
+# Usage: just to-pdf <file|url|dir> [layout]    (default: a4-work)
+# Available layouts: a4-work (default), a4-personal, boox, boox-delight
+to-pdf SOURCE LAYOUT="a4-work":
+  {{home_dir()}}/justscripts/scripts/2pdf.sh "{{SOURCE}}" "{{LAYOUT}}"
 
 # Extract a PDF to <name>_text.md via pymupdf4llm (Tier 1)
 # Usage: just pdf-extract <file.pdf> [--force] [--dry-run]
