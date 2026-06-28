@@ -1,0 +1,39 @@
+% a4-work.tex — preamble for the a4-work pandoc layout.
+% Loaded via `include-in-header` from a4-work.yaml (auto-discovered by 2pdf.sh).
+% Formal A4 output for sharing with colleagues and management.
+%
+% Problem this solves: xelatex article-class defaults give H1=\Large(14.4pt),
+% H2=\large(12pt), H3=\normalsize(11pt) with an 11pt body — H3 is visually
+% identical to body text. This preamble creates a clear three-level staircase.
+
+\usepackage{titlesec}
+
+% Heading hierarchy with 11pt body:
+%   H1 (\section)       — \LARGE = 17.28pt, bold
+%   H2 (\subsection)    — \Large = 14.4pt,  bold
+%   H3 (\subsubsection) — \large = 12.0pt,  bold
+%   Body                —          11.0pt
+%
+% Gaps: H1→H2 = 2.9pt (20%), H2→H3 = 2.4pt (20%), H3→body = 1pt (9%)
+% All bold — weight adds to size to make each level unmistakable at a glance.
+
+\titleformat{\section}
+  {\normalfont\LARGE\bfseries}{\thesection}{0.6em}{}
+
+\titleformat{\subsection}
+  {\normalfont\Large\bfseries}{\thesubsection}{0.6em}{}
+
+\titleformat{\subsubsection}
+  {\normalfont\large\bfseries}{\thesubsubsection}{0.6em}{}
+
+\titleformat{\paragraph}[runin]
+  {\normalfont\normalsize\bfseries}{}{0em}{}[.]
+
+% Vertical spacing — generous above headings, tight below.
+% Format: {left}{space above}{space below}
+\titlespacing*{\section}
+  {0pt}{2.0ex plus 0.5ex minus 0.3ex}{0.8ex plus 0.2ex}
+\titlespacing*{\subsection}
+  {0pt}{1.5ex plus 0.4ex minus 0.2ex}{0.6ex plus 0.2ex}
+\titlespacing*{\subsubsection}
+  {0pt}{1.2ex plus 0.3ex minus 0.2ex}{0.4ex plus 0.1ex}
