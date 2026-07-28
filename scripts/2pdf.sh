@@ -15,9 +15,16 @@
 #   1. ../pdf-layouts/<layout>.tex          -> --include-in-header (absolute path)
 #   2. ../pdf-layouts/lua/*.lua             -> --lua-filter        (applied to every layout)
 #   3. ../pdf-layouts/lua/<layout>/*.lua    -> --lua-filter        (layout-scoped)
+#   4. ../pdf-layouts/preprocess/<layout>.sed -> sed -E over the RAW markdown
+#      source, before pandoc parses it (markdown/.markdown sources only).
+#      Used for text-level transforms pandoc's AST can't safely express (e.g.
+#      stripping Obsidian [[wikilink]] brackets — pandoc's citation extension
+#      mis-parses a bare "[[@name]]" as a Cite node once one bracket layer is
+#      gone at the AST level, so this must happen on the raw text instead).
 #
 # Layout-scoped filters keep one layout's quirks (e.g. boox-delight's
-# table-width rebalancing) from leaking into the others.
+# table-width rebalancing, a4-work's wikilink/HD-number stripping) from
+# leaking into the others.
 
 # Resolve the script's real path via BASH_SOURCE (works for PATH lookup
 # and direct invocation alike) + readlink to follow symlinks. Fall back
@@ -29,6 +36,7 @@ fi
 SCRIPT_DIR="$(cd "$(dirname "$SCRIPT_PATH")" && pwd)"
 LAYOUTS_DIR="$(cd "$SCRIPT_DIR/../pdf-layouts" && pwd)"
 LUA_DIR="$LAYOUTS_DIR/lua"
+PREPROCESS_DIR="$LAYOUTS_DIR/preprocess"
 
 list_layouts() {
     ls "$LAYOUTS_DIR"/*.yaml 2>/dev/null | xargs -n1 basename | sed 's/\.yaml$//'
@@ -56,6 +64,9 @@ if [ ! -f "$CONFIG" ]; then
     list_layouts | sed 's/^/  /'
     exit 1
 fi
+
+PREPROCESS_FILE="$PREPROCESS_DIR/${LAYOUT}.sed"
+[ -f "$PREPROCESS_FILE" ] || PREPROCESS_FILE=""
 
 # Assemble the layout-specific pandoc args once (same for every file converted).
 EXTRA_ARGS=()
@@ -85,7 +96,7 @@ fi
 # with the shared layout args. Returns pandoc's exit status.
 convert_one() {
     local orig="$1" input="$1"
-    local srcfmt="" output tmp_html=""
+    local srcfmt="" output tmp_html="" tmp_md=""
     # Local copy of the layout args so URL-only filters never leak to file conversions.
     local extra=("${EXTRA_ARGS[@]}")
 
@@ -115,6 +126,14 @@ convert_one() {
             ;;
         *.md|*.markdown)
             output="${input%.*}.pdf"             # pandoc auto-detects markdown
+            if [ -n "$PREPROCESS_FILE" ]; then
+                # Raw-text pass BEFORE pandoc parses (see header comment for why:
+                # AST-level Lua filters can't safely undo Obsidian [[wikilinks]]
+                # once pandoc's citation extension has partially consumed one).
+                tmp_md="$(mktemp --suffix=.md)"
+                sed -E -f "$PREPROCESS_FILE" "$input" > "$tmp_md"
+                input="$tmp_md"
+            fi
             ;;
         *.epub)
             output="${input%.epub}.pdf"          # pandoc auto-detects epub
@@ -138,6 +157,7 @@ convert_one() {
         --pdf-engine-opt=-interaction=nonstopmode
     local rc=$?
     [ -n "$tmp_html" ] && rm -f "$tmp_html"
+    [ -n "$tmp_md" ] && rm -f "$tmp_md"
     return $rc
 }
 
