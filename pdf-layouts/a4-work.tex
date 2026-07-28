@@ -15,39 +15,57 @@
 \definecolor{wdodaccent}{HTML}{00b0ea}
 \definecolor{wdodtext}{HTML}{1a1a1a}
 
+% Carlito is missing a glyph for U+2011 (non-breaking hyphen), which shows up
+% in Dutch compound words (e.g. "Epic‑bord", "T‑shirt‑sizing") and rendered as
+% a boxed replacement character. Map it to a regular hyphen wrapped in \mbox
+% so it still doesn't break across a line — same visual + behavior Jelle asked
+% for ("that should be a -"). Add further \newunicodechar lines here if other
+% source documents surface more Carlito glyph gaps.
+\usepackage{newunicodechar}
+\newunicodechar{‑}{\mbox{-}}
+
 \usepackage{titlesec}
 
-% Heading hierarchy with 11pt body:
-%   H1 (\section)       — \LARGE = 17.28pt, bold, wdoddark, accent rule beneath
-%   H2 (\subsection)    — \Large = 14.4pt,  bold, wdoddark
-%   H3 (\subsubsection) — \large = 12.0pt,  bold, wdoddark
-%   Body                —          11.0pt, wdodtext (near-black, not pure black)
+% Heading hierarchy with 11pt body — v2 (2026-07-28, widened on Jelle's feedback:
+% "font size differences between headings should be larger, level 1/2/3/4 not
+% clearly distinguishable"). Explicit \fontsize{size}{baselineskip} instead of
+% LaTeX's built-in \LARGE/\Large/\large steps, whose default increments are too
+% small (17.28/14.4/12.0pt) to read as a confident staircase.
+%   H1 (\section)       — 26pt, bold, wdoddark, accent rule beneath
+%   H2 (\subsection)    — 19pt, bold, wdoddark
+%   H3 (\subsubsection) — 15pt, bold, wdoddark
+%   H4 (\paragraph)     — 12.5pt, bold, wdoddark, own block line (not run-in)
+%   Body                — 11.0pt, wdodtext (near-black, not pure black)
 %
-% Gaps: H1→H2 = 2.9pt (20%), H2→H3 = 2.4pt (20%), H3→body = 1pt (9%)
+% Gaps: H1→H2 = 7pt (37%), H2→H3 = 4pt (27%), H3→H4 = 2.5pt (20%), H4→body = 1.5pt (14%)
+% Each step widens going up — mirrors how a reader scans top-down for structure.
 % All bold — weight adds to size to make each level unmistakable at a glance.
 % Restraint per huisstijl ("beperk het aantal huisstijlkleuren per scherm"):
 % only wdoddark carries headings/links; wdodaccent appears once, as the H1 rule.
 
 \titleformat{\section}
-  {\normalfont\LARGE\bfseries\color{wdoddark}}{\thesection}{0.6em}{}[\vspace{1pt}{\color{wdodaccent}\titlerule[1pt]}]
+  {\normalfont\fontsize{26}{31}\selectfont\bfseries\color{wdoddark}}{\thesection}{0.6em}{}[\vspace{2pt}{\color{wdodaccent}\titlerule[1.2pt]}]
 
 \titleformat{\subsection}
-  {\normalfont\Large\bfseries\color{wdoddark}}{\thesubsection}{0.6em}{}
+  {\normalfont\fontsize{19}{23}\selectfont\bfseries\color{wdoddark}}{\thesubsection}{0.6em}{}
 
 \titleformat{\subsubsection}
-  {\normalfont\large\bfseries\color{wdoddark}}{\thesubsubsection}{0.6em}{}
+  {\normalfont\fontsize{15}{18}\selectfont\bfseries\color{wdoddark}}{\thesubsubsection}{0.6em}{}
 
-\titleformat{\paragraph}[runin]
-  {\normalfont\normalsize\bfseries\color{wdoddark}}{}{0em}{}[.]
+\titleformat{\paragraph}
+  {\normalfont\fontsize{12.5}{15}\selectfont\bfseries\color{wdoddark}}{\theparagraph}{0.6em}{}
 
-% Vertical spacing — generous above headings, tight below.
+% Vertical spacing — generous above headings, tight below. Scaled up with the
+% larger font sizes so whitespace stays proportional to the new staircase.
 % Format: {left}{space above}{space below}
 \titlespacing*{\section}
-  {0pt}{2.0ex plus 0.5ex minus 0.3ex}{0.8ex plus 0.2ex}
+  {0pt}{2.6ex plus 0.6ex minus 0.4ex}{1.0ex plus 0.2ex}
 \titlespacing*{\subsection}
-  {0pt}{1.5ex plus 0.4ex minus 0.2ex}{0.6ex plus 0.2ex}
+  {0pt}{2.0ex plus 0.5ex minus 0.3ex}{0.8ex plus 0.2ex}
 \titlespacing*{\subsubsection}
-  {0pt}{1.2ex plus 0.3ex minus 0.2ex}{0.4ex plus 0.1ex}
+  {0pt}{1.6ex plus 0.4ex minus 0.2ex}{0.6ex plus 0.2ex}
+\titlespacing*{\paragraph}
+  {0pt}{1.3ex plus 0.3ex minus 0.2ex}{0.5ex plus 0.1ex}
 
 % Body text: near-black per huisstijl (#1a1a1a), not pure black.
 \AtBeginDocument{\color{wdodtext}}
