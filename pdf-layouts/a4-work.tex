@@ -1,33 +1,44 @@
 % a4-work.tex — preamble for the a4-work pandoc layout.
 % Loaded via `include-in-header` from a4-work.yaml (auto-discovered by 2pdf.sh).
-% Formal A4 output for sharing with colleagues and management.
+% Formal A4 output for sharing with WDODelta colleagues and management.
 %
-% Problem this solves: xelatex article-class defaults give H1=\Large(14.4pt),
-% H2=\large(12pt), H3=\normalsize(11pt) with an 11pt body — H3 is visually
-% identical to body text. This preamble creates a clear three-level staircase.
+% Styled to the WDODelta huisstijl (official house style, June 2021):
+% donkerblauw #075895 for headings/links/footer, blauw #00b0ea as a single
+% restrained accent (title rule only), Carlito as the Calibri-compatible
+% fallback font (Vivala Sans Rounded is proprietary and unavailable here),
+% near-black body text (#1a1a1a), footer contact line. No logo — the huisstijl
+% doc marks the raster preview asset "niet voor productie"; only the official
+% SVG (request via Afdeling Communicatie) belongs in production documents.
+
+\usepackage{xcolor}
+\definecolor{wdoddark}{HTML}{075895}
+\definecolor{wdodaccent}{HTML}{00b0ea}
+\definecolor{wdodtext}{HTML}{1a1a1a}
 
 \usepackage{titlesec}
 
 % Heading hierarchy with 11pt body:
-%   H1 (\section)       — \LARGE = 17.28pt, bold
-%   H2 (\subsection)    — \Large = 14.4pt,  bold
-%   H3 (\subsubsection) — \large = 12.0pt,  bold
-%   Body                —          11.0pt
+%   H1 (\section)       — \LARGE = 17.28pt, bold, wdoddark, accent rule beneath
+%   H2 (\subsection)    — \Large = 14.4pt,  bold, wdoddark
+%   H3 (\subsubsection) — \large = 12.0pt,  bold, wdoddark
+%   Body                —          11.0pt, wdodtext (near-black, not pure black)
 %
 % Gaps: H1→H2 = 2.9pt (20%), H2→H3 = 2.4pt (20%), H3→body = 1pt (9%)
 % All bold — weight adds to size to make each level unmistakable at a glance.
+% Restraint per huisstijl ("beperk het aantal huisstijlkleuren per scherm"):
+% only wdoddark carries headings/links; wdodaccent appears once, as the H1 rule.
 
 \titleformat{\section}
-  {\normalfont\LARGE\bfseries}{\thesection}{0.6em}{}
+  {\normalfont\LARGE\bfseries\color{wdoddark}}{\thesection}{0.6em}{}[\vspace{1pt}{\color{wdodaccent}\titlerule[1pt]}]
 
 \titleformat{\subsection}
-  {\normalfont\Large\bfseries}{\thesubsection}{0.6em}{}
+  {\normalfont\Large\bfseries\color{wdoddark}}{\thesubsection}{0.6em}{}
 
 \titleformat{\subsubsection}
-  {\normalfont\large\bfseries}{\thesubsubsection}{0.6em}{}
+  {\normalfont\large\bfseries\color{wdoddark}}{\thesubsubsection}{0.6em}{}
 
 \titleformat{\paragraph}[runin]
-  {\normalfont\normalsize\bfseries}{}{0em}{}[.]
+  {\normalfont\normalsize\bfseries\color{wdoddark}}{}{0em}{}[.]
 
 % Vertical spacing — generous above headings, tight below.
 % Format: {left}{space above}{space below}
@@ -37,3 +48,16 @@
   {0pt}{1.5ex plus 0.4ex minus 0.2ex}{0.6ex plus 0.2ex}
 \titlespacing*{\subsubsection}
   {0pt}{1.2ex plus 0.3ex minus 0.2ex}{0.4ex plus 0.1ex}
+
+% Body text: near-black per huisstijl (#1a1a1a), not pure black.
+\AtBeginDocument{\color{wdodtext}}
+
+% Footer — org name + page number, satisfying the huisstijl Self-Check
+% "footer/contact reference" rule. No header (no logo asset to place there).
+\usepackage{fancyhdr}
+\pagestyle{fancy}
+\fancyhf{}
+\renewcommand{\headrulewidth}{0pt}
+\renewcommand{\footrulewidth}{0.4pt}
+\fancyfoot[L]{\small\color{wdoddark}Waterschap Drents Overijsselse Delta (WDODelta)}
+\fancyfoot[R]{\small\color{wdoddark}\thepage}
