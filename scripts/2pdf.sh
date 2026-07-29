@@ -15,7 +15,9 @@
 #   1. ../pdf-layouts/<layout>.tex          -> --include-in-header (absolute path)
 #   2. ../pdf-layouts/lua/*.lua             -> --lua-filter        (applied to every layout)
 #   3. ../pdf-layouts/lua/<layout>/*.lua    -> --lua-filter        (layout-scoped)
-#   4. ../pdf-layouts/preprocess/<layout>.sed -> sed -E over the RAW markdown
+#   4. ../pdf-layouts/preprocess/*.sed        -> sed -E over the RAW markdown
+#      source (applied to every layout)
+#   5. ../pdf-layouts/preprocess/<layout>/*.sed -> sed -E over the RAW markdown
 #      source, before pandoc parses it (markdown/.markdown sources only).
 #      Used for text-level transforms pandoc's AST can't safely express (e.g.
 #      stripping Obsidian [[wikilink]] brackets — pandoc's citation extension
@@ -65,8 +67,20 @@ if [ ! -f "$CONFIG" ]; then
     exit 1
 fi
 
-PREPROCESS_FILE="$PREPROCESS_DIR/${LAYOUT}.sed"
-[ -f "$PREPROCESS_FILE" ] || PREPROCESS_FILE=""
+# Raw-text preprocessing scripts: global first, then layout-scoped, mirroring
+# the Lua filter split above. Collected as -f args so sed applies them in order.
+PREPROCESS_ARGS=()
+if [ -d "$PREPROCESS_DIR" ]; then
+    while IFS= read -r -d '' pp; do
+        PREPROCESS_ARGS+=(-f "$pp")
+    done < <(find "$PREPROCESS_DIR" -maxdepth 1 -type f -name '*.sed' ! -name '.*' -print0 | sort -z)
+fi
+LAYOUT_PREPROCESS_DIR="$PREPROCESS_DIR/$LAYOUT"
+if [ -d "$LAYOUT_PREPROCESS_DIR" ]; then
+    while IFS= read -r -d '' pp; do
+        PREPROCESS_ARGS+=(-f "$pp")
+    done < <(find "$LAYOUT_PREPROCESS_DIR" -maxdepth 1 -type f -name '*.sed' ! -name '.*' -print0 | sort -z)
+fi
 
 # Assemble the layout-specific pandoc args once (same for every file converted).
 EXTRA_ARGS=()
@@ -126,12 +140,12 @@ convert_one() {
             ;;
         *.md|*.markdown)
             output="${input%.*}.pdf"             # pandoc auto-detects markdown
-            if [ -n "$PREPROCESS_FILE" ]; then
+            if [ ${#PREPROCESS_ARGS[@]} -gt 0 ]; then
                 # Raw-text pass BEFORE pandoc parses (see header comment for why:
                 # AST-level Lua filters can't safely undo Obsidian [[wikilinks]]
                 # once pandoc's citation extension has partially consumed one).
                 tmp_md="$(mktemp --suffix=.md)"
-                sed -E -f "$PREPROCESS_FILE" "$input" > "$tmp_md"
+                sed -E "${PREPROCESS_ARGS[@]}" "$input" > "$tmp_md"
                 input="$tmp_md"
             fi
             ;;
