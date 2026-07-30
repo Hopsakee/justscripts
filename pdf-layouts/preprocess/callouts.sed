@@ -10,11 +10,21 @@
 # 60-page Boox read that noise repeats at every callout.
 #
 # The fix keeps the blockquote — it reads well on e-ink, indented and visually
-# distinct — and turns the marker line into a bold title line instead:
+# distinct — and rewrites the marker line into an invisible HTML-comment tag,
+# followed by the callout's own title (when present) as a bold title line:
 #
+#     > <!-- callout:danger -->
 #     > **Dit is de interne versie**
 #     >
 #     > Dit document bevat ...
+#
+# The HTML comment is the machine-readable seam: pandoc's latex writer drops
+# raw HTML, so layouts without extra machinery print nothing for it, while a
+# layout-scoped Lua filter (lua/a4-work/callouts.lua) can match it and restyle
+# the whole blockquote as a real callout box. The callout TYPE is never
+# printed as text — it is a markup label, not a word (Jelle, 2026-07-30).
+# Untitled callouts therefore emit only the comment line; the old fallback
+# that printed the capitalised type ("> [!warning]" -> "**Warning**") is gone.
 #
 # The empty quoted line matters: without it pandoc folds the title into the
 # first body paragraph, so the bold title runs on inline instead of standing
@@ -30,11 +40,10 @@
 # mixed in with the title text, and there is no reliable seam left to cut on.
 
 # Titled callout, any nesting depth, optional fold marker (-/+):
-#   "> [!info] Titel"      -> "> **Titel**"
-#   "> > [!tip]- Titel"    -> "> > **Titel**"
-s/^([[:space:]]*(>[[:space:]]*)+)\[!([A-Za-z]+)\][-+]?[[:space:]]+(.+)$/\1**\4**\n\1/
+#   "> [!info] Titel"   -> "> <!-- callout:info -->" + "> **Titel**" + "> "
+#   "> > [!tip]- Titel" -> same, one quote level deeper
+s/^([[:space:]]*(>[[:space:]]*)+)\[!([A-Za-z]+)\][-+]?[[:space:]]+(.+)$/\1<!-- callout:\L\3\E -->\n\1**\4**\n\1/
 
-# Untitled callout — no title text to promote, so fall back to the callout
-# type itself with its first letter capitalised ("> [!warning]" -> "> **Warning**").
-# Rare in practice; better than leaving "[!warning]" in the body.
-s/^([[:space:]]*(>[[:space:]]*)+)\[!([A-Za-z]+)\][-+]?[[:space:]]*$/\1**\u\3**\n\1/
+# Untitled callout — only the invisible tag; the type is a markup label and
+# is never printed ("> [!warning]" -> "> <!-- callout:warning -->").
+s/^([[:space:]]*(>[[:space:]]*)+)\[!([A-Za-z]+)\][-+]?[[:space:]]*$/\1<!-- callout:\L\3\E -->\n\1/
