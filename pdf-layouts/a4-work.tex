@@ -70,6 +70,22 @@
 % Body text: near-black per huisstijl (#1a1a1a), not pure black.
 \AtBeginDocument{\color{wdodtext}}
 
+% Callout box — target of lua/a4-work/callouts.lua (Obsidian callouts).
+% One sober style for every callout type, per huisstijl restraint ("beperk
+% het aantal huisstijlkleuren per scherm"): a very light tint of the accent
+% blue as background arcering plus a 3pt accent bar on the left. breakable
+% so a callout can cross a page boundary without clipping.
+\usepackage{tcolorbox}
+\tcbuselibrary{breakable,skins}
+\definecolor{wdodcalloutbg}{HTML}{EAF6FC}
+\newtcolorbox{wdocallout}{
+  breakable, enhanced, frame hidden, boxrule=0pt, arc=1.5pt,
+  colback=wdodcalloutbg,
+  borderline west={3pt}{0pt}{wdodaccent},
+  left=10pt, right=10pt, top=7pt, bottom=7pt,
+  before skip=10pt, after skip=10pt
+}
+
 % Footer — org name + page number, satisfying the huisstijl Self-Check
 % "footer/contact reference" rule. No header (no logo asset to place there).
 \usepackage{fancyhdr}
