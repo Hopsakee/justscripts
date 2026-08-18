@@ -153,7 +153,17 @@ convert_one() {
                 # AST-level Lua filters can't safely undo Obsidian [[wikilinks]]
                 # once pandoc's citation extension has partially consumed one).
                 tmp_md="$(mktemp --suffix=.md)"
-                sed -E "${PREPROCESS_ARGS[@]}" "$input" > "$tmp_md"
+                if ! sed -E "${PREPROCESS_ARGS[@]}" "$input" > "$tmp_md"; then
+                    # Without this check a failing sed (bad regex in one of the
+                    # *.sed files, or a write failure) still leaves whatever
+                    # partial/empty output it managed in $tmp_md, and pandoc
+                    # would silently convert that into a "successful" PDF
+                    # instead of surfacing the real error (code-review finding,
+                    # 2026-08-19).
+                    echo "Error: preprocessing sed pass failed for '$orig'" >&2
+                    rm -f "$tmp_md"
+                    return 1
+                fi
                 input="$tmp_md"
             fi
             ;;

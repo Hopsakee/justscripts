@@ -42,8 +42,23 @@
 # Titled callout, any nesting depth, optional fold marker (-/+):
 #   "> [!info] Titel"   -> "> <!-- callout:info -->" + "> **Titel**" + "> "
 #   "> > [!tip]- Titel" -> same, one quote level deeper
-s/^([[:space:]]*(>[[:space:]]*)+)\[!([A-Za-z]+)\][-+]?[[:space:]]+(.+)$/\1<!-- callout:\L\3\E -->\n\1**\4**\n\1/
+#
+# Portable across GNU and BSD/macOS sed (2026-08-19, code-review finding):
+# the previous version used two GNU-only extensions — "\L...\E" case-folding
+# and "\n" inside a replacement meaning a literal newline. Neither is POSIX;
+# BSD/macOS sed treats them as literal "L", "3", "E", "n" characters instead
+# of folding case or breaking the line, so the marker/title lines corrupted
+# on macOS. Fix: drop the case-folding (the captured type is never printed —
+# it's an invisible HTML-comment label matched case-insensitively by every
+# %w+ Lua consumer — so lower/mixed case cost nothing functionally) and
+# replace "\n" with a real embedded newline (backslash immediately followed
+# by an actual line break in the replacement), which is the POSIX-portable
+# way to emit a newline from sed's s/// and works identically on both.
+s/^([[:space:]]*(>[[:space:]]*)+)\[!([A-Za-z]+)\][-+]?[[:space:]]+(.+)$/\1<!-- callout:\3 -->\
+\1**\4**\
+\1/
 
 # Untitled callout — only the invisible tag; the type is a markup label and
 # is never printed ("> [!warning]" -> "> <!-- callout:warning -->").
-s/^([[:space:]]*(>[[:space:]]*)+)\[!([A-Za-z]+)\][-+]?[[:space:]]*$/\1<!-- callout:\L\3\E -->\n\1/
+s/^([[:space:]]*(>[[:space:]]*)+)\[!([A-Za-z]+)\][-+]?[[:space:]]*$/\1<!-- callout:\3 -->\
+\1/

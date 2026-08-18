@@ -42,7 +42,7 @@ font size, line height, link colour, etc.
 |---|---|---|---|
 | `boox-delight` (default) | A5 | DejaVu Serif | Boox Note Air 3C ereader — editorial palette, colored headings, code panels, wide-table auto-rotation |
 | `boox` | A5 | DejaVu Serif | Boox Note Air 3C ereader (minimal) |
-| `a4-work` | A4 | DejaVu Sans | Documents to share with colleagues |
+| `a4-work` | A4 | Carlito | WDODelta huisstijl — donkerblauw headings, callout boxes; documents to share with colleagues |
 | `a4-personal` | A4 | DejaVu Serif | Personal long-form reading at A4 |
 
 For each selected layout, `2pdf.sh` auto-discovers, in order:
@@ -65,13 +65,13 @@ Install on Debian / Ubuntu / Pop!_OS:
 sudo apt update
 sudo apt install pandoc
 sudo apt install texlive-xetex texlive-base texlive-latex-recommended texlive-fonts-recommended
-sudo apt install fonts-dejavu
+sudo apt install fonts-dejavu fonts-crosextra-carlito
 ```
 
 Notes:
 
 - `texlive-xetex` pulls in the XeLaTeX engine, which handles Unicode and custom fonts far better than the default `pdflatex`. The three `texlive-*` packages above are a *minimal* working set — you do **not** need the full `texlive-full` (several GB).
-- `fonts-dejavu` provides "DejaVu Sans / Serif / Sans Mono", referenced by all bundled layouts. Without it, xelatex falls back to a default and the layout may look off.
+- `fonts-dejavu` provides "DejaVu Sans / Serif / Sans Mono", used by `boox-delight`, `boox`, and `a4-personal`. `fonts-crosextra-carlito` provides "Carlito", used by `a4-work`. Without the matching package, xelatex falls back to a default and the layout may look off.
 - `boox-delight.tex` requires TeX Live 2021 or newer for soft-gray table rules (older `colortbl` ignores `\arrayrulecolor`); it compiles clean either way.
 - On other platforms, follow pandoc's own guide: <https://pandoc.org/installing.html>.
 
