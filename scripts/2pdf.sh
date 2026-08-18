@@ -139,7 +139,15 @@ convert_one() {
             input="$tmp_html"
             ;;
         *.md|*.markdown)
-            output="${input%.*}.pdf"             # pandoc auto-detects markdown
+            output="${input%.*}.pdf"
+            # Pandoc's own markdown dialect (unlike CommonMark/GFM) refuses to
+            # start a list right after a paragraph without a blank line between
+            # them — Obsidian's editor has no such requirement, so notes written
+            # there routinely hit this. Without the extension, "**Tier 1:**\n-
+            # item" renders as one flattened line ("Tier 1: - item") instead of
+            # a bulleted list. Source: reproduced 2026-08-18, `pandoc -f markdown`
+            # vs `-f markdown+lists_without_preceding_blankline` on that exact case.
+            srcfmt="markdown+lists_without_preceding_blankline"
             if [ ${#PREPROCESS_ARGS[@]} -gt 0 ]; then
                 # Raw-text pass BEFORE pandoc parses (see header comment for why:
                 # AST-level Lua filters can't safely undo Obsidian [[wikilinks]]
