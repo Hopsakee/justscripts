@@ -78,8 +78,13 @@
 \usepackage{tcolorbox}
 \tcbuselibrary{breakable,skins}
 \definecolor{wdodcalloutbg}{HTML}{EAF6FC}
+
+% Shared skeleton for both box variants below — breakable/enhanced/frameless
+% plumbing is identical; only colour, bar weight, corner, and padding differ.
+\tcbset{wdocbase/.style={breakable, enhanced, frame hidden, boxrule=0pt}}
+
 \newtcolorbox{wdocallout}{
-  breakable, enhanced, frame hidden, boxrule=0pt, arc=1.5pt,
+  wdocbase, arc=1.5pt,
   colback=wdodcalloutbg,
   borderline west={3pt}{0pt}{wdodaccent},
   left=10pt, right=10pt, top=7pt, bottom=7pt,
@@ -95,7 +100,7 @@
 % wdocallout's tinted box — keeps the two visually distinct: a callout is a
 % highlighted note, a plain quote is a quiet aside.
 \newtcolorbox{wdocquote}{
-  breakable, enhanced, frame hidden, boxrule=0pt, arc=0pt,
+  wdocbase, arc=0pt,
   colback=white,
   borderline west={2pt}{0pt}{wdoddark!45},
   left=10pt, right=6pt, top=5pt, bottom=5pt,
