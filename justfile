@@ -41,6 +41,14 @@ resize-images factor *files:
 to-pdf SOURCE LAYOUT="boox-delight":
   {{home_dir()}}/justscripts/scripts/2pdf.sh "{{SOURCE}}" "{{LAYOUT}}"
 
+# Convert a Markdown source to DOCX using a layout's reference template.
+# (Recipe name is "to-docx" to match "to-pdf"; the script is 2docx.sh. Separate
+# script from 2pdf.sh -- DOCX and PDF are different pipelines, not a shared flag.)
+# Usage: just to-docx <file.md> <layout>
+# Available layouts: a4-work (only one with a docx reference template so far)
+to-docx SOURCE LAYOUT:
+  {{home_dir()}}/justscripts/scripts/2docx.sh "{{SOURCE}}" "{{LAYOUT}}"
+
 # Extract a PDF to <name>_text.md via pymupdf4llm (Tier 1)
 # Usage: just pdf-extract <file.pdf> [--force] [--dry-run]
 pdf-extract PDF *FLAGS:

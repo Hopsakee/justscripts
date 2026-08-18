@@ -1,4 +1,4 @@
--- docx-callouts.lua — a4-work scoped, DOCX output only.
+-- lua/a4-work/docx/callouts.lua — a4-work scoped, DOCX output only.
 --
 -- Mirrors the two-tier model sibling callouts.lua already established for
 -- PDF: a real Obsidian [!type] callout gets a distinct box; an ordinary
@@ -56,14 +56,27 @@ local function bullet_prefix(depth, ordered, n)
   return indent .. glyph .. '\u{00A0}\u{00A0}'
 end
 
+-- Only the item's first Para/Plain gets a bullet/number glyph. A "loose"
+-- list item can hold more than one paragraph (a continuation paragraph
+-- under the same bullet); without this guard every one of them was getting
+-- re-prefixed with the SAME glyph -- an ordered item with two paragraphs
+-- rendered as "1. First\n1. Continuation" instead of "1. First" followed by
+-- an indented continuation line.
+local function continuation_indent(depth)
+  return string.rep('    ', depth) .. '\u{00A0}\u{00A0}\u{00A0}'
+end
+
 local function flatten_list(list, depth)
   local out = {}
   local ordered = list.t == 'OrderedList'
   local n = ordered and (list.start or 1) or nil
   for _, item in ipairs(list.content) do
+    local seen_para = false
     for _, b in ipairs(item) do
       if b.t == 'Para' or b.t == 'Plain' then
-        local inlines = {pandoc.Str(bullet_prefix(depth, ordered, n))}
+        local prefix = seen_para and continuation_indent(depth) or bullet_prefix(depth, ordered, n)
+        seen_para = true
+        local inlines = {pandoc.Str(prefix)}
         for _, inline in ipairs(b.content) do inlines[#inlines + 1] = inline end
         out[#out + 1] = pandoc.Para(inlines)
       elseif b.t == 'BulletList' or b.t == 'OrderedList' then
