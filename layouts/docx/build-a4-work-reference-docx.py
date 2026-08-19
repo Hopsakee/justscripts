@@ -37,6 +37,17 @@ this session (2026-08-18):
    the wrong order -- Word's lenient parser can silently drop out-of-
    sequence elements during its repair pass. Fixed by emitting them in
    spec order from the start.
+7. Heading1-4 all number via numId=41 -> abstractNumId=28, which is a
+   numStyleLink to the "WDODHoofdstukken" numbering style (numId=33 ->
+   abstractNumId=2) -- the actual per-level numFmt/lvlText definitions
+   live on THAT abstractNum, not on 28 itself. Jelle wants numbering only
+   through Heading2 ("1.5. Titel"), not cascading into Heading3/4
+   ("1.5.1.1. Titel") -- set ilvl=2/3 (Heading3/Heading4) to numFmt="none"
+   with an empty lvlText, the standard OOXML way to keep a level in the
+   hierarchy (so a later Heading2 still resets correctly) while showing no
+   number for it. Left Heading3/4's own w:numPr in styles.xml untouched --
+   the fix belongs at the numbering-definition level, not duplicated at
+   every consumer.
 """
 import argparse
 import sys
@@ -149,8 +160,37 @@ def build(src: str, dst: str) -> None:
     new_h3 = old_h3.replace('w:before="40"', 'w:before="220" w:after="100"')
     styles = styles.replace(old_h3, new_h3)
 
+    # --- 7. Stop numbering at Heading2: blank out ilvl=2/3 (Heading3/4) on
+    # the abstractNum the "WDODHoofdstukken" numStyleLink actually points
+    # at (abstractNumId=2, not the 28 that Heading1-4's own numPr names --
+    # see docstring). ---
+    numbering = contents["word/numbering.xml"].decode("utf-8")
+
+    old_lvl2 = (
+        '<w:lvl w:ilvl="2"><w:start w:val="1"/><w:numFmt w:val="decimal"/>'
+        '<w:pStyle w:val="Heading3"/><w:suff w:val="space"/>'
+        '<w:lvlText w:val="%1.%2.%3."/>'
+    )
+    assert old_lvl2 in numbering, "abstractNum ilvl=2 (Heading3) not found verbatim -- source template changed?"
+    new_lvl2 = old_lvl2.replace('w:numFmt w:val="decimal"', 'w:numFmt w:val="none"').replace(
+        'w:lvlText w:val="%1.%2.%3."', 'w:lvlText w:val=""'
+    )
+    numbering = numbering.replace(old_lvl2, new_lvl2)
+
+    old_lvl3 = (
+        '<w:lvl w:ilvl="3"><w:start w:val="1"/><w:numFmt w:val="decimal"/>'
+        '<w:pStyle w:val="Heading4"/><w:suff w:val="space"/>'
+        '<w:lvlText w:val="%1.%2.%3.%4."/>'
+    )
+    assert old_lvl3 in numbering, "abstractNum ilvl=3 (Heading4) not found verbatim -- source template changed?"
+    new_lvl3 = old_lvl3.replace('w:numFmt w:val="decimal"', 'w:numFmt w:val="none"').replace(
+        'w:lvlText w:val="%1.%2.%3.%4."', 'w:lvlText w:val=""'
+    )
+    numbering = numbering.replace(old_lvl3, new_lvl3)
+
     contents["word/styles.xml"] = styles.encode("utf-8")
     contents["word/document.xml"] = document.encode("utf-8")
+    contents["word/numbering.xml"] = numbering.encode("utf-8")
 
     with zipfile.ZipFile(dst, "w", zipfile.ZIP_DEFLATED) as zout:
         for item in infos:
