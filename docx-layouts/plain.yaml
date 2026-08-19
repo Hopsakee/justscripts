@@ -1,0 +1,8 @@
+# plain.yaml — pandoc defaults for the plain DOCX layout.
+#
+# Pandoc's own typography, untouched; only the callout boxes are added (in
+# neutral grey), via the reference document plain.docx. Use this when the
+# document is not going out under the WDODelta huisstijl, or when it will be
+# pasted into a template that brings its own styles.
+to: docx
+standalone: true

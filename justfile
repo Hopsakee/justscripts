@@ -45,3 +45,20 @@ to-pdf SOURCE LAYOUT="boox-delight":
 # Usage: just pdf-extract <file.pdf> [--force] [--dry-run]
 pdf-extract PDF *FLAGS:
   uv run '{{home_dir()}}/justscripts/scripts/pdf_extract.py' "{{PDF}}" {{FLAGS}}
+
+# Convert Markdown (or HTML/EPUB) to DOCX with a selectable layout, rendering
+# Obsidian callouts as real Word callout boxes.
+# Also accepts a directory: batch-converts every supported file inside it.
+# (Recipe name is "to-docx" because just recipe names cannot start with a digit;
+# the script is 2docx.sh.)
+# Usage: just to-docx <file|dir> [layout]    (default: a4-work)
+# Available layouts: a4-work (default), plain
+to-docx SOURCE LAYOUT="a4-work":
+  {{home_dir()}}/justscripts/scripts/2docx.sh "{{SOURCE}}" "{{LAYOUT}}"
+
+# Regenerate the pandoc reference documents used by 2docx.sh (docx-layouts/*.docx).
+# Run after editing the PROFILES table in make_docx_reference.py, then commit the
+# regenerated files.
+# Usage: just docx-reference [profile...]    (default: every profile)
+docx-reference *PROFILES:
+  uv run '{{home_dir()}}/justscripts/scripts/make_docx_reference.py' {{PROFILES}}

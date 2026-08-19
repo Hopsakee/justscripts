@@ -134,6 +134,8 @@ just run image_info path/to/image.jpg
 
 - `scripts/` — the scripts themselves (Python + Bash).
 - `pdf-layouts/` — shared pandoc "defaults" files that control the complete PDF layout (paper size, margins, fonts, line spacing, link colour, etc.). Used by `2pdf.sh` for every input type (Markdown, EPUB, HTML, URL). Drop a new `name.yaml` here to create a new layout.
+- `docx-layouts/` — the same idea for DOCX output, used by `2docx.sh`: a `name.yaml` with conversion options plus a `name.docx` reference document, which is where a Word layout actually lives (fonts, heading styles, Obsidian callout boxes). The reference documents are generated from code by `scripts/make_docx_reference.py`.
+- `md-preprocess/` — raw-markdown `sed` transforms applied *before* pandoc parses, shared by `2pdf.sh` and `2docx.sh` because they are about markdown rather than about the output format (Obsidian callout markers globally; `[[wikilinks]]` and personal filing numbers for the `a4-work` layout).
 - `documentation/` — optional per-script markdown docs for scripts that need more explanation than fits in their own comments. Reference the file from the "Available Scripts" table below.
 
 ## Available Scripts
@@ -145,7 +147,9 @@ just run image_info path/to/image.jpg
 | [github_repo_info.py](scripts/github_repo_info.py) | Print GitHub repository stats | — |
 | [resize_images.py](scripts/resize_images.py) | Bulk-resize PNGs by a factor | — |
 | [2pdf.sh](scripts/2pdf.sh) | Any source (Markdown, EPUB, HTML file, http(s) URL, or a directory of those) → PDF with a selectable layout (`boox-delight` default, `boox`, `a4-work`, `a4-personal`). Recipe: `just to-pdf`. | [2pdf.md](documentation/2pdf.md) |
-| [docx_c.sh](scripts/docx_c.sh) | DOCX → PDF (or Markdown) via pandoc | — |
+| [2docx.sh](scripts/2docx.sh) | Markdown (or HTML/EPUB, or a directory of those) → DOCX with a selectable layout (`a4-work` default, `plain`), rendering Obsidian callouts as real Word callout boxes. Recipe: `just to-docx`. | [2docx.md](documentation/2docx.md) |
+| [make_docx_reference.py](scripts/make_docx_reference.py) | Generate the pandoc reference documents `2docx.sh` uses (`docx-layouts/*.docx`). Recipe: `just docx-reference`. | [2docx.md](documentation/2docx.md) |
+| [docx_c.sh](scripts/docx_c.sh) | DOCX → PDF (or Markdown) via pandoc — unfinished stub | — |
 | [pdf_extract.py](scripts/pdf_extract.py) | PDF → `<name>_text.md` via pymupdf4llm (Tier 1 extractor for pkw-librarian) | — |
 
 ## Adding New Scripts

@@ -15,9 +15,9 @@
 #   1. ../pdf-layouts/<layout>.tex          -> --include-in-header (absolute path)
 #   2. ../pdf-layouts/lua/*.lua             -> --lua-filter        (applied to every layout)
 #   3. ../pdf-layouts/lua/<layout>/*.lua    -> --lua-filter        (layout-scoped)
-#   4. ../pdf-layouts/preprocess/*.sed        -> sed -E over the RAW markdown
-#      source (applied to every layout)
-#   5. ../pdf-layouts/preprocess/<layout>/*.sed -> sed -E over the RAW markdown
+#   4. ../md-preprocess/*.sed               -> sed -E over the RAW markdown
+#      source (applied to every layout; shared with 2docx.sh)
+#   5. ../md-preprocess/<layout>/*.sed      -> sed -E over the RAW markdown
 #      source, before pandoc parses it (markdown/.markdown sources only).
 #      Used for text-level transforms pandoc's AST can't safely express (e.g.
 #      stripping Obsidian [[wikilink]] brackets — pandoc's citation extension
@@ -38,7 +38,10 @@ fi
 SCRIPT_DIR="$(cd "$(dirname "$SCRIPT_PATH")" && pwd)"
 LAYOUTS_DIR="$(cd "$SCRIPT_DIR/../pdf-layouts" && pwd)"
 LUA_DIR="$LAYOUTS_DIR/lua"
-PREPROCESS_DIR="$LAYOUTS_DIR/preprocess"
+# Raw-markdown transforms live outside pdf-layouts/ because they are
+# format-independent (Obsidian callouts, wikilinks, HD numbers): 2docx.sh
+# applies the very same files.
+PREPROCESS_DIR="$(cd "$SCRIPT_DIR/../md-preprocess" && pwd)"
 
 list_layouts() {
     ls "$LAYOUTS_DIR"/*.yaml 2>/dev/null | xargs -n1 basename | sed 's/\.yaml$//'

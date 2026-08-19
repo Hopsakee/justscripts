@@ -51,7 +51,15 @@ For each selected layout, `2pdf.sh` auto-discovers, in order:
 2. `pdf-layouts/lua/*.lua` → `--lua-filter` (global, applied to every layout)
 3. `pdf-layouts/lua/<layout>/*.lua` → `--lua-filter` (layout-scoped, e.g. `lua/boox-delight/table-widths.lua`)
 
-Layout-scoped filters keep one layout's quirks from leaking into the others.
+Plus, for markdown sources, raw-text `sed` transforms that run *before* pandoc parses:
+
+4. `md-preprocess/*.sed` (global) — Obsidian callout markers, for every layout
+5. `md-preprocess/<layout>/*.sed` (layout-scoped) — e.g. `a4-work` strips `[[wikilinks]]` and
+   personal filing numbers before a document goes to someone outside the vault
+
+Layout-scoped filters keep one layout's quirks from leaking into the others. `md-preprocess/` sits
+outside `pdf-layouts/` because those transforms are about markdown, not about PDF:
+[`2docx.sh`](2docx.md) applies the very same files when converting the same note to Word.
 
 To add a new layout, drop a `name.yaml` file into `pdf-layouts/` and it becomes available as
 `just to-pdf file.md name`.
