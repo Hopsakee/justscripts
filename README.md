@@ -148,7 +148,8 @@ just run image_info path/to/image.jpg
 | [github_repo_info.py](scripts/github_repo_info.py) | Print GitHub repository stats | — |
 | [resize_images.py](scripts/resize_images.py) | Bulk-resize PNGs by a factor | — |
 | [2pdf.sh](scripts/2pdf.sh) | Any source (Markdown, EPUB, HTML file, http(s) URL, or a directory of those) → PDF with a selectable layout (`boox-delight` default, `boox`, `a4-work`, `a4-personal`). Recipe: `just to-pdf`. | [2pdf.md](documentation/2pdf.md) |
-| [docx_c.sh](scripts/docx_c.sh) | DOCX → PDF (or Markdown) via pandoc | — |
+| [2docx.sh](scripts/2docx.sh) | Markdown → DOCX with a layout's Word reference template (`a4-work`), rendering Obsidian callouts as real callout boxes. Recipe: `just to-docx`. | [2docx.md](documentation/2docx.md) |
+| [docx_c.sh](scripts/docx_c.sh) | DOCX → PDF (or Markdown) via pandoc — unfinished stub, predates `2docx.sh` | — |
 | [pdf_extract.py](scripts/pdf_extract.py) | PDF → `<name>_text.md` via pymupdf4llm (Tier 1 extractor for pkw-librarian) | — |
 
 ## Adding New Scripts

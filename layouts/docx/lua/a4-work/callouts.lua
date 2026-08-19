@@ -2,7 +2,25 @@
 --
 -- Mirrors the two-tier model sibling callouts.lua already established for
 -- PDF: a real Obsidian [!type] callout gets a distinct box; an ordinary
--- blockquote (no marker) is left alone. Word forces list items to the
+-- blockquote (no marker) is left alone.
+--
+-- The box is drawn by four paragraph styles the reference document defines
+-- (see build-a4-work-reference-docx.py, fix 8), which this filter attaches
+-- with `custom-style`:
+--
+--     Callout        body paragraphs of the box
+--     CalloutTitle   the callout's own title line (bold, house blue)
+--     CalloutTight   rows of a run inside the box: list items, code lines
+--     CalloutGap     spacer between two callouts that touch
+--
+-- Dedicated styles rather than reusing pandoc's BlockText, which was the
+-- first approach here: BlockText is also what pandoc gives an ORDINARY
+-- blockquote, so boxing it boxed every plain "> quote" as if it were a
+-- callout -- the exact two-tier distinction the PDF path makes and the
+-- comment above claims. Worse, Word has no concept of a callout ending: it
+-- shades paragraph by paragraph, so a plain quote or a second callout
+-- following the first shaded straight into the same box, and a page of
+-- callouts came out as one giant blue block with several bold titles in it. Word forces list items to the
 -- built-in "Compact"/"ListParagraph" style no matter what surrounding
 -- Div/custom-style wraps them (confirmed empirically: wrapping a BulletList
 -- or its items in a custom-style Div has zero effect on the emitted pStyle
@@ -68,8 +86,25 @@ local function marker_type(block)
   return nil
 end
 
-local function wrap(block)
-  return pandoc.Div({block}, pandoc.Attr('', {}, {['custom-style'] = 'BlockText'}))
+local function styled(block, name)
+  return pandoc.Div({block}, pandoc.Attr('', {}, {['custom-style'] = name}))
+end
+
+-- callouts.sed emits a titled callout's title as a paragraph holding nothing
+-- but one Strong span, so that shape identifies the title line. An untitled
+-- callout has no such paragraph and gets no title style.
+local function is_title_para(block)
+  if not block or block.t ~= 'Para' then return false end
+  local seen_strong = false
+  for _, inline in ipairs(block.content) do
+    if inline.t == 'Strong' then
+      if seen_strong then return false end
+      seen_strong = true
+    elseif inline.t ~= 'Space' and inline.t ~= 'SoftBreak' then
+      return false
+    end
+  end
+  return seen_strong
 end
 
 local function bullet_prefix(depth, ordered, n)
@@ -125,26 +160,82 @@ local function flatten_codeblock(cb)
   return out
 end
 
+-- Everything a callout contains has to come out as a paragraph carrying one of
+-- the callout styles, because shading a paragraph is the only way Word can put
+-- something inside the box. Block types Word styles from somewhere else are
+-- therefore re-emitted rather than passed through: a Header would take a real
+-- heading style, a standalone image its Figure/Image Caption styles, a nested
+-- plain quote its BlockText indent -- each of them punching a white hole in the
+-- middle of the box (and, for the heading, adding a callout's aside to the
+-- document outline). Tables are the one exception, for the reason in the header
+-- comment above: no paragraph style can reach a table's own tblStyle.
 local function styleize(blocks)
   local out = {}
-  for _, b in ipairs(blocks) do
+  local emit
+  emit = function(b)
     if b.t == 'BulletList' or b.t == 'OrderedList' then
-      for _, p in ipairs(flatten_list(b, 0)) do out[#out + 1] = wrap(p) end
+      for _, p in ipairs(flatten_list(b, 0)) do out[#out + 1] = styled(p, 'CalloutTight') end
     elseif b.t == 'CodeBlock' then
-      for _, p in ipairs(flatten_codeblock(b)) do out[#out + 1] = wrap(p) end
+      for _, p in ipairs(flatten_codeblock(b)) do out[#out + 1] = styled(p, 'CalloutTight') end
     elseif b.t == 'Para' or b.t == 'Plain' then
-      out[#out + 1] = wrap(b)
+      out[#out + 1] = styled(b, is_title_para(b) and 'CalloutTitle' or 'Callout')
+    elseif b.t == 'Header' then
+      -- A heading inside a callout titles the box, not the document.
+      out[#out + 1] = styled(pandoc.Para(b.content), 'CalloutTitle')
+    elseif b.t == 'Figure' then
+      for _, inner in ipairs(b.content) do emit(inner) end
+      if b.caption and b.caption.long then
+        for _, inner in ipairs(b.caption.long) do emit(inner) end
+      end
+    elseif b.t == 'BlockQuote' then
+      -- An ordinary quote nested in a callout. A nested CALLOUT is already a
+      -- Div by the time we get here (pandoc walks children first) and takes the
+      -- branch below, keeping its own styles.
+      for _, inner in ipairs(b.content) do emit(inner) end
     else
       out[#out + 1] = b
     end
   end
+  for _, b in ipairs(blocks) do emit(b) end
   return out
 end
 
-function BlockQuote(el)
+-- Class on the Div each callout is wrapped in, so the second pass below can
+-- tell "end of one callout, start of the next" from "next paragraph of the same
+-- callout" -- both are just adjacent Divs otherwise.
+local CONTAINER_CLASS = 'callout'
+
+local function callout_blockquote(el)
   local blocks = el.content
   if #blocks == 0 or not marker_type(blocks[1]) then
     return nil -- ordinary blockquote: leave to pandoc's native handling
   end
-  return pandoc.Div(styleize(blocks))
+  return pandoc.Div(styleize(blocks), pandoc.Attr('', {CONTAINER_CLASS}, {}))
 end
+
+-- Word shades paragraph by paragraph and has no idea a callout ended, so two
+-- callouts written back to back in the markdown shade into a single box with
+-- two titles. A CalloutGap paragraph between them (4pt, unshaded) is the Word
+-- equivalent of the gap Obsidian draws.
+local function separate_touching_callouts(blocks)
+  local out = pandoc.List()
+  for i, block in ipairs(blocks) do
+    local touching = i > 1
+      and block.t == 'Div' and block.classes:includes(CONTAINER_CLASS)
+      and blocks[i - 1].t == 'Div' and blocks[i - 1].classes:includes(CONTAINER_CLASS)
+    if touching then
+      -- A non-breaking space, not an empty paragraph: pandoc drops those.
+      out:insert(styled(pandoc.Para({pandoc.Str('\u{00A0}')}), 'CalloutGap'))
+    end
+    out:insert(block)
+  end
+  return out
+end
+
+-- Two passes, in this order: rewrite the callouts, then separate the ones that
+-- ended up touching. One pass cannot do both -- the gap belongs between whole
+-- callouts, and inside a callout the very same kind of Divs sit side by side.
+return {
+  {BlockQuote = callout_blockquote},
+  {Blocks = separate_touching_callouts},
+}

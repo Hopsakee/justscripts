@@ -28,9 +28,12 @@ this session (2026-08-18):
 4. Heading2 and Heading4 had no before/after spacing at all; Heading3 only
    had a token 2pt before. Added real spacing to all three (Heading1
    already had after=260, just needed before=0 added explicitly).
-5. BlockText had no border or shading -- gave it a left accent-blue border
-   + light tint fill, same colours as the PDF path's wdocallout tcolorbox
-   (00B0EA / EAF6FC), so DOCX and PDF read as one system.
+5. BlockText (pandoc's style for ordinary blockquote paragraphs) had no
+   border or shading. It briefly carried the accent-blue box, but that made
+   every plain "> quote" look like a callout, and two callouts in a row shade
+   into one box with two titles. The box moved to the dedicated Callout
+   styles of fix 8; BlockText is now a plain indented quote, which is what
+   the PDF path gives a marker-less blockquote too.
 6. OOXML w:pPr child elements have a strict required order (CT_PPrBase):
    pBdr/shd must come before spacing/ind, and keepNext/keepLines/numPr
    must come before spacing. Steps 4 and 5 above initially landed these in
@@ -48,6 +51,21 @@ this session (2026-08-18):
    number for it. Left Heading3/4's own w:numPr in styles.xml untouched --
    the fix belongs at the numbering-definition level, not duplicated at
    every consumer.
+8. Callout, Callout Title, Callout Tight and Callout Gap did not exist -- no
+   template has them, because they are not Word's or pandoc's idea, they are
+   this repo's: docx/lua/a4-work/callouts.lua tags an Obsidian callout's
+   paragraphs with them via `custom-style`, and Word draws the box from
+   their shading + left border. They carry the accent-blue box that fix 5
+   took off BlockText, in the same colours as the PDF's wdocallout tcolorbox
+   (00B0EA / EAF6FC), so a callout still reads as one system across formats
+   while a plain quote no longer poses as one.
+   All three box styles MUST keep identical indents and border, because Word
+   draws shading and border per paragraph at that paragraph's own indent: a
+   row sitting further right tears a white notch out of the box.
+9. SourceCode and VerbatimChar did not exist either, and pandoc names them
+   for every fenced code block and every inline `code` span -- so code came
+   out in the body font, including the per-line Code inlines the callout
+   filter emits to keep a fenced block inside the box.
 """
 import argparse
 import sys
@@ -55,6 +73,94 @@ import zipfile
 
 DEFAULT_SRC = "/home/jelle/Drive/Downloads/WDODelta rapport staand_stripped.docx"
 DEFAULT_DST = "/home/jelle/Code/justscripts/layouts/docx/a4-work-reference.docx"
+
+# --- The styles pandoc (and this repo's callout filter) name but no Word
+# template defines. Kept as module-level constants, in OOXML child order per
+# CT_PPrBase (pBdr, shd, spacing, ind -- see fix 6), so the exact same strings
+# are available to anything that has to re-apply them to an already-derived
+# reference document when the corporate source is not at hand.
+
+# Callout box geometry, shared by every box style below. Word draws shading and
+# border per paragraph, at that paragraph's own indent -- so these MUST agree,
+# or the box tears open at any row that sits further right (which is also why
+# the filter flattens a callout's lists to text bullets instead of leaving them
+# as Word list paragraphs, whose indent comes from the numbering definition and
+# outranks any paragraph style).
+CALLOUT_BORDER = '<w:pBdr><w:left w:val="single" w:sz="18" w:space="10" w:color="00B0EA"/></w:pBdr>'
+CALLOUT_SHADING = '<w:shd w:val="clear" w:color="auto" w:fill="EAF6FC"/>'
+CALLOUT_INDENT = '<w:ind w:firstLine="0" w:left="480" w:right="120"/>'
+
+CALLOUT_STYLES = (
+    # Body paragraphs of the box.
+    '<w:style w:type="paragraph" w:customStyle="1" w:styleId="Callout">'
+    '<w:name w:val="Callout"/><w:basedOn w:val="BodyText"/><w:next w:val="BodyText"/>'
+    '<w:qFormat/><w:pPr>'
+    + CALLOUT_BORDER + CALLOUT_SHADING
+    + '<w:spacing w:after="100" w:before="100"/>' + CALLOUT_INDENT +
+    '</w:pPr></w:style>'
+    # The callout's own title line: bold, house blue, kept with the body it
+    # introduces so a page break cannot leave the title stranded.
+    '<w:style w:type="paragraph" w:customStyle="1" w:styleId="CalloutTitle">'
+    '<w:name w:val="Callout Title"/><w:basedOn w:val="Callout"/><w:next w:val="Callout"/>'
+    '<w:qFormat/><w:pPr><w:keepNext/>'
+    + CALLOUT_BORDER + CALLOUT_SHADING
+    + '<w:spacing w:after="40" w:before="140"/>' + CALLOUT_INDENT +
+    '</w:pPr><w:rPr><w:b/><w:color w:val="075895"/></w:rPr></w:style>'
+    # Rows that belong to a run inside the box -- list items and code lines.
+    # Same box, tighter spacing, so a flattened list does not read as a stack
+    # of separate paragraphs.
+    '<w:style w:type="paragraph" w:customStyle="1" w:styleId="CalloutTight">'
+    '<w:name w:val="Callout Tight"/><w:basedOn w:val="Callout"/><w:next w:val="Callout"/>'
+    '<w:qFormat/><w:pPr>'
+    + CALLOUT_BORDER + CALLOUT_SHADING
+    + '<w:spacing w:after="20" w:before="20"/>' + CALLOUT_INDENT +
+    '</w:pPr></w:style>'
+    # Spacer between two callouts that touch: no shading and a 4pt line, so
+    # they read as two boxes instead of shading into one with two titles.
+    '<w:style w:type="paragraph" w:customStyle="1" w:styleId="CalloutGap">'
+    '<w:name w:val="Callout Gap"/><w:basedOn w:val="Normal"/><w:next w:val="BodyText"/>'
+    '<w:qFormat/>'
+    '<w:pPr><w:spacing w:after="0" w:before="0" w:line="120" w:lineRule="exact"/></w:pPr>'
+    '<w:rPr><w:sz w:val="8"/><w:szCs w:val="8"/></w:rPr></w:style>'
+)
+
+# Fenced code blocks (SourceCode) and inline code / the callout filter's
+# per-line Code inlines (VerbatimChar). Consolas with a Courier New fallback:
+# both ship with Office, and the source template names neither.
+CODE_STYLES = (
+    '<w:style w:type="paragraph" w:customStyle="1" w:styleId="SourceCode">'
+    '<w:name w:val="Source Code"/><w:basedOn w:val="BodyText"/><w:next w:val="BodyText"/>'
+    '<w:qFormat/><w:pPr><w:spacing w:after="20" w:before="20"/></w:pPr>'
+    '<w:rPr><w:rFonts w:ascii="Consolas" w:hAnsi="Consolas" w:cs="Courier New"/>'
+    '<w:sz w:val="20"/><w:szCs w:val="20"/></w:rPr></w:style>'
+    '<w:style w:type="character" w:customStyle="1" w:styleId="VerbatimChar">'
+    '<w:name w:val="Verbatim Char"/><w:basedOn w:val="DefaultParagraphFont"/>'
+    '<w:rPr><w:rFonts w:ascii="Consolas" w:hAnsi="Consolas" w:cs="Courier New"/>'
+    '<w:sz w:val="20"/><w:szCs w:val="20"/></w:rPr></w:style>'
+)
+
+# BlockText is pandoc's style for an ordinary blockquote's paragraphs. Plain
+# indented quote, deliberately NOT the callout box: a marker-less "> quote"
+# gets the same restrained treatment in the PDF path.
+BLOCKTEXT_STYLE = (
+    '<w:style w:type="paragraph" w:styleId="BlockText">'
+    '<w:name w:val="Block Text"/><w:basedOn w:val="BodyText"/><w:next w:val="BodyText"/>'
+    '<w:uiPriority w:val="9"/><w:unhideWhenUsed/><w:qFormat/>'
+    '<w:pPr><w:spacing w:after="100" w:before="100"/>'
+    '<w:ind w:firstLine="0" w:left="480" w:right="480"/></w:pPr></w:style>'
+)
+
+MISSING_STYLES = (
+    '<w:style w:type="paragraph" w:customStyle="1" w:styleId="Compact">'
+    '<w:name w:val="Compact"/><w:basedOn w:val="BodyText"/><w:qFormat/>'
+    '<w:pPr><w:spacing w:after="36" w:before="36"/></w:pPr></w:style>'
+    + BLOCKTEXT_STYLE
+    + '<w:style w:type="paragraph" w:customStyle="1" w:styleId="FirstParagraph">'
+    '<w:name w:val="First Paragraph"/><w:basedOn w:val="BodyText"/><w:next w:val="BodyText"/>'
+    '<w:qFormat/></w:style>'
+    + CALLOUT_STYLES
+    + CODE_STYLES
+)
 
 
 def build(src: str, dst: str) -> None:
@@ -79,32 +185,17 @@ def build(src: str, dst: str) -> None:
     )
     styles = styles.replace(old_bodytext, new_bodytext)
 
-    # --- 2. Add Compact, BlockText (with border/shading, step 5+6 folded
-    # in directly since there's no reason to land it wrong first), and
-    # FirstParagraph -- none exist in the source template. ---
-    new_blocktext = (
-        '<w:style w:type="paragraph" w:styleId="BlockText">'
-        '<w:name w:val="Block Text"/><w:basedOn w:val="BodyText"/><w:next w:val="BodyText"/>'
-        '<w:uiPriority w:val="9"/><w:unhideWhenUsed/><w:qFormat/>'
-        '<w:pPr>'
-        '<w:pBdr><w:left w:val="single" w:sz="18" w:space="10" w:color="00B0EA"/></w:pBdr>'
-        '<w:shd w:val="clear" w:color="auto" w:fill="EAF6FC"/>'
-        '<w:spacing w:after="100" w:before="100"/>'
-        '<w:ind w:firstLine="0" w:left="480" w:right="120"/>'
-        '</w:pPr></w:style>'
-    )
-    extra_styles = (
-        '<w:style w:type="paragraph" w:customStyle="1" w:styleId="Compact">'
-        '<w:name w:val="Compact"/><w:basedOn w:val="BodyText"/><w:qFormat/>'
-        '<w:pPr><w:spacing w:after="36" w:before="36"/></w:pPr></w:style>'
-        + new_blocktext +
-        '<w:style w:type="paragraph" w:customStyle="1" w:styleId="FirstParagraph">'
-        '<w:name w:val="First Paragraph"/><w:basedOn w:val="BodyText"/><w:next w:val="BodyText"/>'
-        '<w:qFormat/></w:style>'
-    )
+    # --- 2. Add the styles pandoc names but no Word template defines:
+    # Compact/BlockText/FirstParagraph (step 2), the callout box styles
+    # (step 8) and the code styles (step 9). Step 6's element order is
+    # folded in directly -- there's no reason to land it wrong first. ---
     marker = '</w:style><w:style w:type="paragraph" w:styleId="Heading1"'
     assert marker in styles, "Heading1 marker not found verbatim -- source template changed?"
-    styles = styles.replace(marker, "</w:style>" + extra_styles + '<w:style w:type="paragraph" w:styleId="Heading1"', 1)
+    styles = styles.replace(
+        marker,
+        "</w:style>" + MISSING_STYLES + '<w:style w:type="paragraph" w:styleId="Heading1"',
+        1,
+    )
 
     # --- 3. Left margin: match the right margin (2.5cm), was 6.75cm. ---
     old_margin = (

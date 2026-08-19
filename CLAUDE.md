@@ -61,6 +61,14 @@ preprocessing-discovery logic is intentionally duplicated between the two rather
 into a shared library, matching the "small independently-readable script" pattern used
 throughout the repo.
 
+Obsidian callouts are the one construct handled in both formats and the reason the Lua/sed split
+exists: `layouts/preprocess/callouts.sed` turns a `> [!type] Titel` marker into an invisible
+HTML-comment seam, and each format's Lua filter restyles the blockquote from there — a tcolorbox
+for PDF, a set of `custom-style` paragraph styles (`Callout`, `Callout Title`, `Callout Tight`,
+`Callout Gap`, defined in the reference document by
+`layouts/docx/build-a4-work-reference-docx.py`) for DOCX. A marker-less blockquote stays a plain
+quote in both. See documentation/2docx.md for what a Word box can and cannot contain.
+
 Adding a layout: drop `layouts/pdf/<name>.yaml` (PDF) and/or `layouts/docx/<name>-reference.docx`
 (DOCX) — no code changes needed, both scripts list layouts by globbing their format's directory.
 
