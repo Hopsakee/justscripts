@@ -10,19 +10,24 @@
 #     - an http(s) URL   (fetched and treated as HTML)
 #     - a directory      (batch-converts every supported file inside it)
 #
-# Layouts live in ../pdf-layouts/*.yaml and are shared across every input type.
+# Layouts live in ../layouts/pdf/*.yaml and are shared across every input type.
 # Auto-discovery for the selected layout, in this order:
-#   1. ../pdf-layouts/<layout>.tex          -> --include-in-header (absolute path)
-#   2. ../pdf-layouts/lua/*.lua             -> --lua-filter        (applied to every layout)
-#   3. ../pdf-layouts/lua/<layout>/*.lua    -> --lua-filter        (layout-scoped)
-#   4. ../md-preprocess/*.sed               -> sed -E over the RAW markdown
+#   1. ../layouts/pdf/<layout>.tex          -> --include-in-header (absolute path)
+#   2. ../layouts/pdf/lua/*.lua             -> --lua-filter        (applied to every layout)
+#   3. ../layouts/pdf/lua/<layout>/*.lua    -> --lua-filter        (layout-scoped)
+#   4. ../layouts/preprocess/*.sed            -> sed -E over the RAW markdown
 #      source (applied to every layout; shared with 2docx.sh)
-#   5. ../md-preprocess/<layout>/*.sed      -> sed -E over the RAW markdown
+#   5. ../layouts/preprocess/<layout>/*.sed -> sed -E over the RAW markdown
 #      source, before pandoc parses it (markdown/.markdown sources only).
 #      Used for text-level transforms pandoc's AST can't safely express (e.g.
 #      stripping Obsidian [[wikilink]] brackets — pandoc's citation extension
 #      mis-parses a bare "[[@name]]" as a Cite node once one bracket layer is
 #      gone at the AST level, so this must happen on the raw text instead).
+#
+# Before any of the above, markdown sources always go through
+# normalize_line_endings() first (CRLF/bare-CR -> LF) -- every *.sed rule is
+# ^/$-anchored and GNU sed splits records on \n only, so bad line endings
+# silently defeat every one of them (see that function's own comment).
 #
 # Layout-scoped filters keep one layout's quirks (e.g. boox-delight's
 # table-width rebalancing, a4-work's wikilink/HD-number stripping) from
@@ -36,15 +41,13 @@ if command -v readlink >/dev/null 2>&1; then
     SCRIPT_PATH="$(readlink -f "$SCRIPT_PATH" 2>/dev/null || echo "$SCRIPT_PATH")"
 fi
 SCRIPT_DIR="$(cd "$(dirname "$SCRIPT_PATH")" && pwd)"
-LAYOUTS_DIR="$(cd "$SCRIPT_DIR/../pdf-layouts" && pwd)"
-LUA_DIR="$LAYOUTS_DIR/lua"
-# Raw-markdown transforms live outside pdf-layouts/ because they are
-# format-independent (Obsidian callouts, wikilinks, HD numbers): 2docx.sh
-# applies the very same files.
-PREPROCESS_DIR="$(cd "$SCRIPT_DIR/../md-preprocess" && pwd)"
+LAYOUTS_ROOT="$(cd "$SCRIPT_DIR/../layouts" && pwd)"
+PDF_DIR="$LAYOUTS_ROOT/pdf"
+LUA_DIR="$PDF_DIR/lua"
+PREPROCESS_DIR="$LAYOUTS_ROOT/preprocess"
 
 list_layouts() {
-    ls "$LAYOUTS_DIR"/*.yaml 2>/dev/null | xargs -n1 basename | sed 's/\.yaml$//'
+    ls "$PDF_DIR"/*.yaml 2>/dev/null | xargs -n1 basename | sed 's/\.yaml$//'
 }
 
 usage() {
@@ -61,7 +64,7 @@ fi
 
 SOURCE="$1"
 LAYOUT="${2:-boox-delight}"
-CONFIG="$LAYOUTS_DIR/${LAYOUT}.yaml"
+CONFIG="$PDF_DIR/${LAYOUT}.yaml"
 
 if [ ! -f "$CONFIG" ]; then
     echo "Error: layout '$LAYOUT' not found at $CONFIG"
@@ -88,7 +91,7 @@ fi
 # Assemble the layout-specific pandoc args once (same for every file converted).
 EXTRA_ARGS=()
 
-TEX_PREAMBLE="$LAYOUTS_DIR/${LAYOUT}.tex"
+TEX_PREAMBLE="$PDF_DIR/${LAYOUT}.tex"
 if [ -f "$TEX_PREAMBLE" ]; then
     EXTRA_ARGS+=("--include-in-header=$TEX_PREAMBLE")
 fi
@@ -108,12 +111,33 @@ if [ -d "$LAYOUT_LUA_DIR" ]; then
     done < <(find "$LAYOUT_LUA_DIR" -maxdepth 1 -type f -name '*.lua' ! -name '.*' -print0 | sort -z)
 fi
 
+# Normalize line endings BEFORE any other markdown preprocessing. Every
+# *.sed rule below is ^/$-anchored and GNU sed splits records on \n only --
+# a source with CRLF endings leaves a trailing \r that a rule's trailing $
+# can swallow into captured text, and a source with BARE-CR ("classic Mac")
+# endings has NO \n at all, so sed treats the whole file as one giant line
+# and no ^/$ anchor ever matches past the first/last line. Reproduced
+# 2026-08-19: a pasted Obsidian callout with bare-CR line endings defeated
+# the callout-marker sed rule entirely -- the whole blockquote collapsed
+# into one run-on paragraph with the literal "[!type]" marker text intact.
+# wc -l counts \n bytes, so it's 0 for both an empty/one-line file (nothing
+# to normalize -- tr is still a safe no-op there) and a bare-CR file (every
+# \r IS the line break, so converting each to \n is exactly correct).
+normalize_line_endings() {
+    local src="$1" dst="$2"
+    if [ "$(wc -l < "$src")" -gt 0 ]; then
+        sed $'s/\r$//' "$src" > "$dst"       # CRLF -> LF (strip the leftover \r)
+    else
+        tr '\r' '\n' < "$src" > "$dst"       # bare-CR -> LF
+    fi
+}
+
 # Convert one source (file path or URL) to a sibling/CWD .pdf.
 # Determines pandoc input format + output path from the source, then runs pandoc
 # with the shared layout args. Returns pandoc's exit status.
 convert_one() {
     local orig="$1" input="$1"
-    local srcfmt="" output tmp_html="" tmp_md=""
+    local srcfmt="" output tmp_html="" tmp_md="" tmp_norm=""
     # Local copy of the layout args so URL-only filters never leak to file conversions.
     local extra=("${EXTRA_ARGS[@]}")
 
@@ -138,17 +162,42 @@ convert_one() {
                 return 1
             fi
             # Drop images for URL conversions — see url-strip-images.lua.
-            extra+=("--lua-filter=$LAYOUTS_DIR/url-strip-images.lua")
+            extra+=("--lua-filter=$PDF_DIR/url-strip-images.lua")
             input="$tmp_html"
             ;;
         *.md|*.markdown)
-            output="${input%.*}.pdf"             # pandoc auto-detects markdown
+            output="${input%.*}.pdf"
+            # Pandoc's own markdown dialect (unlike CommonMark/GFM) refuses to
+            # start a list right after a paragraph without a blank line between
+            # them — Obsidian's editor has no such requirement, so notes written
+            # there routinely hit this. Without the extension, "**Tier 1:**\n-
+            # item" renders as one flattened line ("Tier 1: - item") instead of
+            # a bulleted list. Source: reproduced 2026-08-18, `pandoc -f markdown`
+            # vs `-f markdown+lists_without_preceding_blankline` on that exact case.
+            srcfmt="markdown+lists_without_preceding_blankline"
+            tmp_norm="$(mktemp --suffix=.md)"
+            if ! normalize_line_endings "$input" "$tmp_norm"; then
+                echo "Error: line-ending normalization failed for '$orig'" >&2
+                rm -f "$tmp_norm"
+                return 1
+            fi
+            input="$tmp_norm"
             if [ ${#PREPROCESS_ARGS[@]} -gt 0 ]; then
                 # Raw-text pass BEFORE pandoc parses (see header comment for why:
                 # AST-level Lua filters can't safely undo Obsidian [[wikilinks]]
                 # once pandoc's citation extension has partially consumed one).
                 tmp_md="$(mktemp --suffix=.md)"
-                sed -E "${PREPROCESS_ARGS[@]}" "$input" > "$tmp_md"
+                if ! sed -E "${PREPROCESS_ARGS[@]}" "$input" > "$tmp_md"; then
+                    # Without this check a failing sed (bad regex in one of the
+                    # *.sed files, or a write failure) still leaves whatever
+                    # partial/empty output it managed in $tmp_md, and pandoc
+                    # would silently convert that into a "successful" PDF
+                    # instead of surfacing the real error (code-review finding,
+                    # 2026-08-19).
+                    echo "Error: preprocessing sed pass failed for '$orig'" >&2
+                    rm -f "$tmp_md"
+                    return 1
+                fi
                 input="$tmp_md"
             fi
             ;;
@@ -174,6 +223,7 @@ convert_one() {
         --pdf-engine-opt=-interaction=nonstopmode
     local rc=$?
     [ -n "$tmp_html" ] && rm -f "$tmp_html"
+    [ -n "$tmp_norm" ] && rm -f "$tmp_norm"
     [ -n "$tmp_md" ] && rm -f "$tmp_md"
     return $rc
 }

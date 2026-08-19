@@ -34,7 +34,7 @@ silently falls back to a different format or layout.
 
 ## Layouts
 
-Layouts live in `pdf-layouts/*.yaml` at the repo root and are **shared across every input type**.
+Layouts live in `layouts/pdf/*.yaml` and are **shared across every input type**.
 Each file is a pandoc "defaults" file that controls the complete look: paper size, margins, fonts,
 font size, line height, link colour, etc.
 
@@ -42,26 +42,18 @@ font size, line height, link colour, etc.
 |---|---|---|---|
 | `boox-delight` (default) | A5 | DejaVu Serif | Boox Note Air 3C ereader — editorial palette, colored headings, code panels, wide-table auto-rotation |
 | `boox` | A5 | DejaVu Serif | Boox Note Air 3C ereader (minimal) |
-| `a4-work` | A4 | DejaVu Sans | Documents to share with colleagues |
+| `a4-work` | A4 | Carlito | WDODelta huisstijl — donkerblauw headings, callout boxes; documents to share with colleagues |
 | `a4-personal` | A4 | DejaVu Serif | Personal long-form reading at A4 |
 
 For each selected layout, `2pdf.sh` auto-discovers, in order:
 
-1. `pdf-layouts/<layout>.tex` → `--include-in-header` (e.g. `boox-delight.tex`)
-2. `pdf-layouts/lua/*.lua` → `--lua-filter` (global, applied to every layout)
-3. `pdf-layouts/lua/<layout>/*.lua` → `--lua-filter` (layout-scoped, e.g. `lua/boox-delight/table-widths.lua`)
+1. `layouts/pdf/<layout>.tex` → `--include-in-header` (e.g. `boox-delight.tex`)
+2. `layouts/pdf/lua/*.lua` → `--lua-filter` (global, applied to every layout)
+3. `layouts/pdf/lua/<layout>/*.lua` → `--lua-filter` (layout-scoped, e.g. `lua/boox-delight/table-widths.lua`)
 
-Plus, for markdown sources, raw-text `sed` transforms that run *before* pandoc parses:
+Layout-scoped filters keep one layout's quirks from leaking into the others.
 
-4. `md-preprocess/*.sed` (global) — Obsidian callout markers, for every layout
-5. `md-preprocess/<layout>/*.sed` (layout-scoped) — e.g. `a4-work` strips `[[wikilinks]]` and
-   personal filing numbers before a document goes to someone outside the vault
-
-Layout-scoped filters keep one layout's quirks from leaking into the others. `md-preprocess/` sits
-outside `pdf-layouts/` because those transforms are about markdown, not about PDF:
-[`2docx.sh`](2docx.md) applies the very same files when converting the same note to Word.
-
-To add a new layout, drop a `name.yaml` file into `pdf-layouts/` and it becomes available as
+To add a new layout, drop a `name.yaml` file into `layouts/pdf/` and it becomes available as
 `just to-pdf file.md name`.
 
 ## Dependencies
@@ -73,13 +65,13 @@ Install on Debian / Ubuntu / Pop!_OS:
 sudo apt update
 sudo apt install pandoc
 sudo apt install texlive-xetex texlive-base texlive-latex-recommended texlive-fonts-recommended
-sudo apt install fonts-dejavu
+sudo apt install fonts-dejavu fonts-crosextra-carlito
 ```
 
 Notes:
 
 - `texlive-xetex` pulls in the XeLaTeX engine, which handles Unicode and custom fonts far better than the default `pdflatex`. The three `texlive-*` packages above are a *minimal* working set — you do **not** need the full `texlive-full` (several GB).
-- `fonts-dejavu` provides "DejaVu Sans / Serif / Sans Mono", referenced by all bundled layouts. Without it, xelatex falls back to a default and the layout may look off.
+- `fonts-dejavu` provides "DejaVu Sans / Serif / Sans Mono", used by `boox-delight`, `boox`, and `a4-personal`. `fonts-crosextra-carlito` provides "Carlito", used by `a4-work`. Without the matching package, xelatex falls back to a default and the layout may look off.
 - `boox-delight.tex` requires TeX Live 2021 or newer for soft-gray table rules (older `colortbl` ignores `\arrayrulecolor`); it compiles clean either way.
 - On other platforms, follow pandoc's own guide: <https://pandoc.org/installing.html>.
 
@@ -104,7 +96,7 @@ If all three succeed, `just to-pdf file.md` will work.
 
 ## Customising a layout
 
-Edit the relevant yaml in `pdf-layouts/`. Common pandoc variables:
+Edit the relevant yaml in `layouts/pdf/`. Common pandoc variables:
 
 ```yaml
 pdf-engine: xelatex

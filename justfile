@@ -41,24 +41,15 @@ resize-images factor *files:
 to-pdf SOURCE LAYOUT="boox-delight":
   {{home_dir()}}/justscripts/scripts/2pdf.sh "{{SOURCE}}" "{{LAYOUT}}"
 
+# Convert a Markdown source to DOCX using a layout's reference template.
+# (Recipe name is "to-docx" to match "to-pdf"; the script is 2docx.sh. Separate
+# script from 2pdf.sh -- DOCX and PDF are different pipelines, not a shared flag.)
+# Usage: just to-docx <file.md> <layout>
+# Available layouts: a4-work (only one with a docx reference template so far)
+to-docx SOURCE LAYOUT:
+  {{home_dir()}}/justscripts/scripts/2docx.sh "{{SOURCE}}" "{{LAYOUT}}"
+
 # Extract a PDF to <name>_text.md via pymupdf4llm (Tier 1)
 # Usage: just pdf-extract <file.pdf> [--force] [--dry-run]
 pdf-extract PDF *FLAGS:
   uv run '{{home_dir()}}/justscripts/scripts/pdf_extract.py' "{{PDF}}" {{FLAGS}}
-
-# Convert Markdown (or HTML/EPUB) to DOCX with a selectable layout, rendering
-# Obsidian callouts as real Word callout boxes.
-# Also accepts a directory: batch-converts every supported file inside it.
-# (Recipe name is "to-docx" because just recipe names cannot start with a digit;
-# the script is 2docx.sh.)
-# Usage: just to-docx <file|dir> [layout]    (default: a4-work)
-# Available layouts: a4-work (default), plain
-to-docx SOURCE LAYOUT="a4-work":
-  {{home_dir()}}/justscripts/scripts/2docx.sh "{{SOURCE}}" "{{LAYOUT}}"
-
-# Regenerate the pandoc reference documents used by 2docx.sh (docx-layouts/*.docx).
-# Run after editing the PROFILES table in make_docx_reference.py, then commit the
-# regenerated files.
-# Usage: just docx-reference [profile...]    (default: every profile)
-docx-reference *PROFILES:
-  uv run '{{home_dir()}}/justscripts/scripts/make_docx_reference.py' {{PROFILES}}

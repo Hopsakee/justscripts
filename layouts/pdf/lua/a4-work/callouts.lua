@@ -1,8 +1,7 @@
 -- callouts.lua — a4-work scoped: render Obsidian callouts as real callout
 -- boxes instead of plain blockquotes.
 --
--- Upstream seam: md-preprocess/callouts.sed (global, shared with 2docx.sh)
--- rewrites every Obsidian
+-- Upstream seam: preprocess/callouts.sed (global) rewrites every Obsidian
 -- callout marker line ("> [!important]" / "> [!info] Titel") into an
 -- invisible HTML comment as the first line of the blockquote:
 --

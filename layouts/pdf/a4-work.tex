@@ -41,7 +41,8 @@
 % Each step widens going up — mirrors how a reader scans top-down for structure.
 % All bold — weight adds to size to make each level unmistakable at a glance.
 % Restraint per huisstijl ("beperk het aantal huisstijlkleuren per scherm"):
-% only wdoddark carries headings/links; wdodaccent appears once, as the H1 rule.
+% only wdoddark carries headings/links; wdodaccent is reserved for the H1 rule
+% and the callout box's left bar (wdocallout, below) — no other use of it.
 
 \titleformat{\section}
   {\normalfont\fontsize{26}{31}\selectfont\bfseries\color{wdoddark}}{\thesection}{0.6em}{}[\vspace{2pt}{\color{wdodaccent}\titlerule[1.2pt]}]
@@ -78,13 +79,35 @@
 \usepackage{tcolorbox}
 \tcbuselibrary{breakable,skins}
 \definecolor{wdodcalloutbg}{HTML}{EAF6FC}
+
+% Shared skeleton for both box variants below — breakable/enhanced/frameless
+% plumbing is identical; only colour, bar weight, corner, and padding differ.
+\tcbset{wdocbase/.style={breakable, enhanced, frame hidden, boxrule=0pt}}
+
 \newtcolorbox{wdocallout}{
-  breakable, enhanced, frame hidden, boxrule=0pt, arc=1.5pt,
+  wdocbase, arc=1.5pt,
   colback=wdodcalloutbg,
   borderline west={3pt}{0pt}{wdodaccent},
   left=10pt, right=10pt, top=7pt, bottom=7pt,
   before skip=10pt, after skip=10pt
 }
+
+% Plain blockquotes ("> tekst" with no "[!type]" marker) fall straight through
+% the Lua filter above untouched — it only boxes real Obsidian callouts. Left
+% at LaTeX's built-in `quote` environment, that renders as a bare indent with
+% no frame at all ("indent maar geen kader", Jelle 2026-08-18). Obsidian's own
+% editor gives every blockquote a left bar regardless of a [!type] marker, so
+% readers expect one here too. Quiet, uncoloured bar — lighter than
+% wdocallout's tinted box — keeps the two visually distinct: a callout is a
+% highlighted note, a plain quote is a quiet aside.
+\newtcolorbox{wdocquote}{
+  wdocbase, arc=0pt,
+  colback=white,
+  borderline west={2pt}{0pt}{wdoddark!45},
+  left=10pt, right=6pt, top=5pt, bottom=5pt,
+  before skip=8pt, after skip=8pt
+}
+\renewenvironment{quote}{\begin{wdocquote}}{\end{wdocquote}}
 
 % Footer — org name + page number, satisfying the huisstijl Self-Check
 % "footer/contact reference" rule. No header (no logo asset to place there).
