@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Derive pdf-layouts/a4-work-reference.docx from Jelle's corporate WDODelta
+"""Derive layouts/docx/a4-work-reference.docx from Jelle's corporate WDODelta
 template. Run this again (against a fresh copy of the source template) if
 the corporate template changes upstream -- don't hand-edit the derived
 .docx directly, everything here is a scripted, re-runnable transform.
@@ -43,7 +43,7 @@ import sys
 import zipfile
 
 DEFAULT_SRC = "/home/jelle/Drive/Downloads/WDODelta rapport staand_stripped.docx"
-DEFAULT_DST = "/home/jelle/Code/justscripts/pdf-layouts/a4-work-reference.docx"
+DEFAULT_DST = "/home/jelle/Code/justscripts/layouts/docx/a4-work-reference.docx"
 
 
 def build(src: str, dst: str) -> None:

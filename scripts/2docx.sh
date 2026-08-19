@@ -11,13 +11,13 @@
 # Usage: 2docx <source.md> <layout>
 #   <source.md>: a .md/.markdown file (only source type wired up so far --
 #                epub/html could be added later the same way 2pdf.sh has them)
-#   <layout>: a layout with a <layout>-reference.docx in ../pdf-layouts/
+#   <layout>: a layout with a <layout>-reference.docx in ../layouts/docx/
 #
 # Layout files, per layout <name>:
-#   ../pdf-layouts/<name>-reference.docx     -> --reference-doc (required)
-#   ../pdf-layouts/lua/<name>/docx/*.lua     -> --lua-filter (docx-scoped, optional)
-#   ../pdf-layouts/preprocess/*.sed            -> sed -E over RAW markdown (shared convention w/ 2pdf.sh)
-#   ../pdf-layouts/preprocess/<name>/*.sed     -> sed -E, layout-scoped (shared convention w/ 2pdf.sh)
+#   ../layouts/docx/<name>-reference.docx    -> --reference-doc (required)
+#   ../layouts/docx/lua/<name>/*.lua         -> --lua-filter (docx-scoped, optional)
+#   ../layouts/preprocess/*.sed                -> sed -E over RAW markdown (shared convention w/ 2pdf.sh)
+#   ../layouts/preprocess/<name>/*.sed         -> sed -E, layout-scoped (shared convention w/ 2pdf.sh)
 #
 # No <layout>.yaml is read here. Those hold PDF/xelatex-only keys
 # (pdf-engine, fonts, colorlinks) with no docx equivalent -- pairing a PDF
@@ -33,11 +33,12 @@ if command -v readlink >/dev/null 2>&1; then
     SCRIPT_PATH="$(readlink -f "$SCRIPT_PATH" 2>/dev/null || echo "$SCRIPT_PATH")"
 fi
 SCRIPT_DIR="$(cd "$(dirname "$SCRIPT_PATH")" && pwd)"
-LAYOUTS_DIR="$(cd "$SCRIPT_DIR/../pdf-layouts" && pwd)"
-PREPROCESS_DIR="$LAYOUTS_DIR/preprocess"
+LAYOUTS_ROOT="$(cd "$SCRIPT_DIR/../layouts" && pwd)"
+DOCX_DIR="$LAYOUTS_ROOT/docx"
+PREPROCESS_DIR="$LAYOUTS_ROOT/preprocess"
 
 list_layouts() {
-    ls "$LAYOUTS_DIR"/*-reference.docx 2>/dev/null | xargs -n1 basename | sed 's/-reference\.docx$//'
+    ls "$DOCX_DIR"/*-reference.docx 2>/dev/null | xargs -n1 basename | sed 's/-reference\.docx$//'
 }
 
 usage() {
@@ -53,7 +54,7 @@ fi
 
 SOURCE="$1"
 LAYOUT="$2"
-REFERENCE_DOC="$LAYOUTS_DIR/${LAYOUT}-reference.docx"
+REFERENCE_DOC="$DOCX_DIR/${LAYOUT}-reference.docx"
 
 if [ ! -f "$REFERENCE_DOC" ]; then
     echo "Error: no docx reference template for layout '$LAYOUT' (expected $REFERENCE_DOC)" >&2
@@ -93,7 +94,7 @@ fi
 
 EXTRA_ARGS=("--reference-doc=$REFERENCE_DOC")
 
-LAYOUT_LUA_DOCX_DIR="$LAYOUTS_DIR/lua/$LAYOUT/docx"
+LAYOUT_LUA_DOCX_DIR="$DOCX_DIR/lua/$LAYOUT"
 if [ -d "$LAYOUT_LUA_DOCX_DIR" ]; then
     while IFS= read -r -d '' filter; do
         EXTRA_ARGS+=("--lua-filter=$filter")

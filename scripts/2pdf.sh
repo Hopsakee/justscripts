@@ -10,14 +10,14 @@
 #     - an http(s) URL   (fetched and treated as HTML)
 #     - a directory      (batch-converts every supported file inside it)
 #
-# Layouts live in ../pdf-layouts/*.yaml and are shared across every input type.
+# Layouts live in ../layouts/pdf/*.yaml and are shared across every input type.
 # Auto-discovery for the selected layout, in this order:
-#   1. ../pdf-layouts/<layout>.tex          -> --include-in-header (absolute path)
-#   2. ../pdf-layouts/lua/*.lua             -> --lua-filter        (applied to every layout)
-#   3. ../pdf-layouts/lua/<layout>/*.lua    -> --lua-filter        (layout-scoped)
-#   4. ../pdf-layouts/preprocess/*.sed        -> sed -E over the RAW markdown
-#      source (applied to every layout)
-#   5. ../pdf-layouts/preprocess/<layout>/*.sed -> sed -E over the RAW markdown
+#   1. ../layouts/pdf/<layout>.tex          -> --include-in-header (absolute path)
+#   2. ../layouts/pdf/lua/*.lua             -> --lua-filter        (applied to every layout)
+#   3. ../layouts/pdf/lua/<layout>/*.lua    -> --lua-filter        (layout-scoped)
+#   4. ../layouts/preprocess/*.sed            -> sed -E over the RAW markdown
+#      source (applied to every layout; shared with 2docx.sh)
+#   5. ../layouts/preprocess/<layout>/*.sed -> sed -E over the RAW markdown
 #      source, before pandoc parses it (markdown/.markdown sources only).
 #      Used for text-level transforms pandoc's AST can't safely express (e.g.
 #      stripping Obsidian [[wikilink]] brackets — pandoc's citation extension
@@ -36,12 +36,13 @@ if command -v readlink >/dev/null 2>&1; then
     SCRIPT_PATH="$(readlink -f "$SCRIPT_PATH" 2>/dev/null || echo "$SCRIPT_PATH")"
 fi
 SCRIPT_DIR="$(cd "$(dirname "$SCRIPT_PATH")" && pwd)"
-LAYOUTS_DIR="$(cd "$SCRIPT_DIR/../pdf-layouts" && pwd)"
-LUA_DIR="$LAYOUTS_DIR/lua"
-PREPROCESS_DIR="$LAYOUTS_DIR/preprocess"
+LAYOUTS_ROOT="$(cd "$SCRIPT_DIR/../layouts" && pwd)"
+PDF_DIR="$LAYOUTS_ROOT/pdf"
+LUA_DIR="$PDF_DIR/lua"
+PREPROCESS_DIR="$LAYOUTS_ROOT/preprocess"
 
 list_layouts() {
-    ls "$LAYOUTS_DIR"/*.yaml 2>/dev/null | xargs -n1 basename | sed 's/\.yaml$//'
+    ls "$PDF_DIR"/*.yaml 2>/dev/null | xargs -n1 basename | sed 's/\.yaml$//'
 }
 
 usage() {
@@ -58,7 +59,7 @@ fi
 
 SOURCE="$1"
 LAYOUT="${2:-boox-delight}"
-CONFIG="$LAYOUTS_DIR/${LAYOUT}.yaml"
+CONFIG="$PDF_DIR/${LAYOUT}.yaml"
 
 if [ ! -f "$CONFIG" ]; then
     echo "Error: layout '$LAYOUT' not found at $CONFIG"
@@ -85,7 +86,7 @@ fi
 # Assemble the layout-specific pandoc args once (same for every file converted).
 EXTRA_ARGS=()
 
-TEX_PREAMBLE="$LAYOUTS_DIR/${LAYOUT}.tex"
+TEX_PREAMBLE="$PDF_DIR/${LAYOUT}.tex"
 if [ -f "$TEX_PREAMBLE" ]; then
     EXTRA_ARGS+=("--include-in-header=$TEX_PREAMBLE")
 fi
@@ -135,7 +136,7 @@ convert_one() {
                 return 1
             fi
             # Drop images for URL conversions — see url-strip-images.lua.
-            extra+=("--lua-filter=$LAYOUTS_DIR/url-strip-images.lua")
+            extra+=("--lua-filter=$PDF_DIR/url-strip-images.lua")
             input="$tmp_html"
             ;;
         *.md|*.markdown)

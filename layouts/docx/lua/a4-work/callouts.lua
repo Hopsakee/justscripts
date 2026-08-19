@@ -1,4 +1,4 @@
--- lua/a4-work/docx/callouts.lua — a4-work scoped, DOCX output only.
+-- docx/lua/a4-work/callouts.lua — a4-work scoped, DOCX output only.
 --
 -- Mirrors the two-tier model sibling callouts.lua already established for
 -- PDF: a real Obsidian [!type] callout gets a distinct box; an ordinary

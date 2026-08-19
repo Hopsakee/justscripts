@@ -34,7 +34,7 @@ silently falls back to a different format or layout.
 
 ## Layouts
 
-Layouts live in `pdf-layouts/*.yaml` at the repo root and are **shared across every input type**.
+Layouts live in `layouts/pdf/*.yaml` and are **shared across every input type**.
 Each file is a pandoc "defaults" file that controls the complete look: paper size, margins, fonts,
 font size, line height, link colour, etc.
 
@@ -47,13 +47,13 @@ font size, line height, link colour, etc.
 
 For each selected layout, `2pdf.sh` auto-discovers, in order:
 
-1. `pdf-layouts/<layout>.tex` → `--include-in-header` (e.g. `boox-delight.tex`)
-2. `pdf-layouts/lua/*.lua` → `--lua-filter` (global, applied to every layout)
-3. `pdf-layouts/lua/<layout>/*.lua` → `--lua-filter` (layout-scoped, e.g. `lua/boox-delight/table-widths.lua`)
+1. `layouts/pdf/<layout>.tex` → `--include-in-header` (e.g. `boox-delight.tex`)
+2. `layouts/pdf/lua/*.lua` → `--lua-filter` (global, applied to every layout)
+3. `layouts/pdf/lua/<layout>/*.lua` → `--lua-filter` (layout-scoped, e.g. `lua/boox-delight/table-widths.lua`)
 
 Layout-scoped filters keep one layout's quirks from leaking into the others.
 
-To add a new layout, drop a `name.yaml` file into `pdf-layouts/` and it becomes available as
+To add a new layout, drop a `name.yaml` file into `layouts/pdf/` and it becomes available as
 `just to-pdf file.md name`.
 
 ## Dependencies
@@ -96,7 +96,7 @@ If all three succeed, `just to-pdf file.md` will work.
 
 ## Customising a layout
 
-Edit the relevant yaml in `pdf-layouts/`. Common pandoc variables:
+Edit the relevant yaml in `layouts/pdf/`. Common pandoc variables:
 
 ```yaml
 pdf-engine: xelatex

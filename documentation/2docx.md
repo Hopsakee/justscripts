@@ -22,20 +22,21 @@ grow the same way, but nothing has exercised that path yet, so it isn't claimed 
 
 ## Layout files
 
-A layout named `<name>` needs, under `pdf-layouts/`:
+A layout named `<name>` needs, under `layouts/docx/`:
 
 | File | Required | Purpose |
 |---|---|---|
 | `<name>-reference.docx` | yes | `--reference-doc` — Word styles (headings, body text, callout box, margins) |
-| `lua/<name>/docx/*.lua` | no | docx-scoped Lua filters, e.g. flattening nested lists inside callouts so Word's callout-box style can cover the whole block, not just its first line |
-| `preprocess/*.sed`, `preprocess/<name>/*.sed` | no | shared with `2pdf.sh` — raw-text passes before pandoc parses (Obsidian wikilink/HD stripping, callout-marker insertion) |
+| `lua/<name>/*.lua` | no | docx-scoped Lua filters, e.g. flattening nested lists inside callouts so Word's callout-box style can cover the whole block, not just its first line |
+| `../preprocess/*.sed`, `../preprocess/<name>/*.sed` | no | shared with `2pdf.sh` — raw-text passes before pandoc parses (Obsidian wikilink/HD stripping, callout-marker insertion) |
 
 No `<name>.yaml` is read here — that file's keys (`pdf-engine`, fonts, `colorlinks`) are
-PDF/xelatex-only and have no docx equivalent.
+PDF/xelatex-only and have no docx equivalent, and PDF layout files live in the sibling
+`layouts/pdf/` directory.
 
 ## `a4-work`
 
-The only layout with a docx reference template. `pdf-layouts/a4-work-reference.docx` is derived
+The only layout with a docx reference template. `layouts/docx/a4-work-reference.docx` is derived
 from Jelle's `WDODelta rapport staand_stripped.docx` corporate template — see the file's own
 build history for the specific fixes applied (bold-forcing style bug, missing `Compact`/
 `BlockText`/`FirstParagraph` styles, oversized left margin, missing heading spacing, callout

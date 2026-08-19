@@ -133,7 +133,10 @@ just run image_info path/to/image.jpg
 ## Repository Structure
 
 - `scripts/` — the scripts themselves (Python + Bash).
-- `pdf-layouts/` — shared pandoc "defaults" files that control the complete PDF layout (paper size, margins, fonts, line spacing, link colour, etc.). Used by `2pdf.sh` for every input type (Markdown, EPUB, HTML, URL). Drop a new `name.yaml` here to create a new layout.
+- `layouts/` — layout assets for the document-conversion pipeline, split by output format:
+  - `layouts/pdf/` — pandoc "defaults" `*.yaml` files controlling the complete PDF layout (paper size, margins, fonts, line spacing, link colour, etc.), plus their `*.tex` preambles and layout-scoped `lua/<name>/*.lua` filters. Used by `2pdf.sh` for every input type (Markdown, EPUB, HTML, URL). Drop a new `name.yaml` here to create a new layout.
+  - `layouts/docx/` — `<name>-reference.docx` Word style templates plus their layout-scoped `lua/<name>/*.lua` filters, used by `2docx.sh`.
+  - `layouts/preprocess/` — raw-text `sed` passes shared by both `2pdf.sh` and `2docx.sh`, run on the markdown source before pandoc parses it (global `*.sed`, layout-scoped `<name>/*.sed`).
 - `documentation/` — optional per-script markdown docs for scripts that need more explanation than fits in their own comments. Reference the file from the "Available Scripts" table below.
 
 ## Available Scripts
