@@ -23,6 +23,10 @@
 # (pdf-engine, fonts, colorlinks) with no docx equivalent -- pairing a PDF
 # yaml with the docx path would be misleading name-borrowing, not reuse.
 #
+# Before any preprocessing, the source always goes through
+# normalize_line_endings() first (CRLF/bare-CR -> LF) -- see that function's
+# own comment in this file (duplicated from 2pdf.sh, same reason as below).
+#
 # The preprocessing-discovery block below is intentionally duplicated from
 # 2pdf.sh rather than shared via a sourced library: each script stays a
 # small, independently-readable tool, matching the existing pattern of
@@ -39,6 +43,27 @@ PREPROCESS_DIR="$LAYOUTS_ROOT/preprocess"
 
 list_layouts() {
     ls "$DOCX_DIR"/*-reference.docx 2>/dev/null | xargs -n1 basename | sed 's/-reference\.docx$//'
+}
+
+# Normalize line endings BEFORE any other markdown preprocessing. Every
+# *.sed rule below is ^/$-anchored and GNU sed splits records on \n only --
+# a source with CRLF endings leaves a trailing \r that a rule's trailing $
+# can swallow into captured text, and a source with BARE-CR ("classic Mac")
+# endings has NO \n at all, so sed treats the whole file as one giant line
+# and no ^/$ anchor ever matches past the first/last line. Reproduced
+# 2026-08-19: a pasted Obsidian callout with bare-CR line endings defeated
+# the callout-marker sed rule entirely -- the whole blockquote collapsed
+# into one run-on paragraph with the literal "[!type]" marker text intact.
+# wc -l counts \n bytes, so it's 0 for both an empty/one-line file (nothing
+# to normalize -- tr is still a safe no-op there) and a bare-CR file (every
+# \r IS the line break, so converting each to \n is exactly correct).
+normalize_line_endings() {
+    local src="$1" dst="$2"
+    if [ "$(wc -l < "$src")" -gt 0 ]; then
+        sed $'s/\r$//' "$src" > "$dst"       # CRLF -> LF (strip the leftover \r)
+    else
+        tr '\r' '\n' < "$src" > "$dst"       # bare-CR -> LF
+    fi
 }
 
 usage() {
@@ -103,10 +128,26 @@ fi
 
 output="${SOURCE%.*}.docx"
 input="$SOURCE"
+
+tmp_norm="$(mktemp --suffix=.md)"
+if ! normalize_line_endings "$SOURCE" "$tmp_norm"; then
+    echo "Error: line-ending normalization failed for '$SOURCE'" >&2
+    rm -f "$tmp_norm"
+    exit 1
+fi
+input="$tmp_norm"
+
 tmp_md=""
 if [ ${#PREPROCESS_ARGS[@]} -gt 0 ]; then
     tmp_md="$(mktemp --suffix=.md)"
-    sed -E "${PREPROCESS_ARGS[@]}" "$SOURCE" > "$tmp_md"
+    if ! sed -E "${PREPROCESS_ARGS[@]}" "$input" > "$tmp_md"; then
+        # Same failure-surfacing fix as 2pdf.sh (code-review finding,
+        # 2026-08-19) -- a failing sed here previously still fed pandoc
+        # whatever partial/empty output it produced instead of erroring.
+        echo "Error: preprocessing sed pass failed for '$SOURCE'" >&2
+        rm -f "$tmp_norm" "$tmp_md"
+        exit 1
+    fi
     input="$tmp_md"
 fi
 
@@ -117,5 +158,6 @@ echo "Converting '$SOURCE' -> '$output' (layout: $LAYOUT)"
 # one run-on line regardless of output format.
 pandoc "$input" -f markdown+lists_without_preceding_blankline -o "$output" "${EXTRA_ARGS[@]}"
 rc=$?
+rm -f "$tmp_norm"
 [ -n "$tmp_md" ] && rm -f "$tmp_md"
 exit $rc
