@@ -41,6 +41,17 @@ resize-images factor *files:
 to-pdf SOURCE LAYOUT="boox-delight":
   {{home_dir()}}/justscripts/scripts/2pdf.sh "{{SOURCE}}" "{{LAYOUT}}"
 
+# Convert a epub file to PDF
+# Usage: just epub2pdf <file.epub>
+# Usage: just epub2pdf <directory>
+epub2pdf ARG:
+  {{home_dir()}}/justscripts/scripts/epub2pdf.sh "{{ARG}}"
+
+# Convert a epub file to markdown
+# Usage: just to-md <file.epub>
+# Usage: just to-md <directory>
+to-md ARG:
+  {{home_dir()}}/justscripts/scripts/to-md.sh "{{ARG}}"
 # Convert a Markdown source to DOCX using a layout's reference template.
 # (Recipe name is "to-docx" to match "to-pdf"; the script is 2docx.sh. Separate
 # script from 2pdf.sh -- DOCX and PDF are different pipelines, not a shared flag.)
