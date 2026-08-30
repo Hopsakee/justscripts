@@ -43,3 +43,9 @@ md2pdf FILE:
 # Usage: just epub2pdf <directory>
 epub2pdf ARG:
   {{home_dir()}}/justscripts/scripts/epub2pdf.sh "{{ARG}}"
+
+# Convert a epub file to markdown
+# Usage: just to-md <file.epub>
+# Usage: just to-md <directory>
+to-md ARG:
+  {{home_dir()}}/justscripts/scripts/to-md.sh "{{ARG}}"
