@@ -53,3 +53,12 @@ to-docx SOURCE LAYOUT:
 # Usage: just pdf-extract <file.pdf> [--force] [--dry-run]
 pdf-extract PDF *FLAGS:
   uv run '{{home_dir()}}/justscripts/scripts/pdf_extract.py' "{{PDF}}" {{FLAGS}}
+
+# Fetch your YouTube Watch Later playlist to watch-later-<date>.md
+# Reads cookies from a browser you are signed into YouTube on, so it must run
+# interactively on your own machine -- on macOS the Keychain prompt means this
+# CANNOT be scheduled. Pass the browser you actually use; "firefox" is only
+# yt-dlp's default.
+# Usage: just watch-later [browser] [out-dir]
+watch-later BROWSER="firefox" OUT_DIR=".":
+  uv run '{{home_dir()}}/justscripts/scripts/fetch_watch_later.py' --browser "{{BROWSER}}" --out-dir "{{OUT_DIR}}"
