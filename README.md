@@ -151,7 +151,7 @@ just run image_info path/to/image.jpg
 | [2docx.sh](scripts/2docx.sh) | Markdown → DOCX with a layout's Word reference template (`a4-work`), rendering Obsidian callouts as real callout boxes. Recipe: `just to-docx`. | [2docx.md](documentation/2docx.md) |
 | [docx_c.sh](scripts/docx_c.sh) | DOCX → PDF (or Markdown) via pandoc — unfinished stub, predates `2docx.sh` | — |
 | [pdf_extract.py](scripts/pdf_extract.py) | PDF → `<name>_text.md` via pymupdf4llm (Tier 1 extractor for pkw-librarian) | — |
-| [fetch_watch_later.py](scripts/fetch_watch_later.py) | YouTube Watch Later → `watch-later-<date>.md` via yt-dlp + browser cookies. Interactive only — cannot be scheduled. Recipe: `just watch-later`. | — |
+| [fetch_youtube_playlist.py](scripts/fetch_youtube_playlist.py) | Public or unlisted YouTube playlist → `youtube-<slug>-<date>.md` via yt-dlp. Anonymous — no account, no cookies. (Watch Later cannot be read; use your own unlisted playlist.) Recipe: `just yt-playlist`. | — |
 
 ## Adding New Scripts
 
