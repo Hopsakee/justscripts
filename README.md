@@ -129,6 +129,30 @@ just run image_info path/to/image.jpg
 - **Tip: keep things portable**
   - Prefer `{{home_dir()}}/justscripts/scripts/...` when your `justfile` is not inside this repo.
   - If you want to stay relative, keep the `justfile` in this repo and run `just` from anywhere under it; `just` will execute from the repo root.
+
+## Repository Structure
+
+- `scripts/` — the scripts themselves (Python + Bash).
+- `layouts/` — layout assets for the document-conversion pipeline, split by output format:
+  - `layouts/pdf/` — pandoc "defaults" `*.yaml` files controlling the complete PDF layout (paper size, margins, fonts, line spacing, link colour, etc.), plus their `*.tex` preambles and layout-scoped `lua/<name>/*.lua` filters. Used by `2pdf.sh` for every input type (Markdown, EPUB, HTML, URL). Drop a new `name.yaml` here to create a new layout.
+  - `layouts/docx/` — `<name>-reference.docx` Word style templates plus their layout-scoped `lua/<name>/*.lua` filters, used by `2docx.sh`.
+  - `layouts/preprocess/` — raw-text `sed` passes shared by both `2pdf.sh` and `2docx.sh`, run on the markdown source before pandoc parses it (global `*.sed`, layout-scoped `<name>/*.sed`).
+- `documentation/` — optional per-script markdown docs for scripts that need more explanation than fits in their own comments. Reference the file from the "Available Scripts" table below.
+
+## Available Scripts
+
+| Script | Purpose | Docs |
+|---|---|---|
+| [hello_world.py](scripts/hello_world.py) | Template / smoke test | — |
+| [image_info.py](scripts/image_info.py) | Print image metadata | — |
+| [github_repo_info.py](scripts/github_repo_info.py) | Print GitHub repository stats | — |
+| [resize_images.py](scripts/resize_images.py) | Bulk-resize PNGs by a factor | — |
+| [2pdf.sh](scripts/2pdf.sh) | Any source (Markdown, EPUB, HTML file, http(s) URL, or a directory of those) → PDF with a selectable layout (`boox-delight` default, `boox`, `a4-work`, `a4-personal`). Recipe: `just to-pdf`. | [2pdf.md](documentation/2pdf.md) |
+| [2docx.sh](scripts/2docx.sh) | Markdown → DOCX with a layout's Word reference template (`a4-work`), rendering Obsidian callouts as real callout boxes. Recipe: `just to-docx`. | [2docx.md](documentation/2docx.md) |
+| [docx_c.sh](scripts/docx_c.sh) | DOCX → PDF (or Markdown) via pandoc — unfinished stub, predates `2docx.sh` | — |
+| [pdf_extract.py](scripts/pdf_extract.py) | PDF → `<name>_text.md` via pymupdf4llm (Tier 1 extractor for pkw-librarian) | — |
+| [fetch_watch_later.py](scripts/fetch_watch_later.py) | YouTube Watch Later → `watch-later-<date>.md` via yt-dlp + browser cookies. Interactive only — cannot be scheduled. Recipe: `just watch-later`. | — |
+
 ## Adding New Scripts
 
 To add a new script to this repository:

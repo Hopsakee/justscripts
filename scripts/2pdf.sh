@@ -1,0 +1,262 @@
+#!/usr/bin/env bash
+# Convert any source to PDF using pandoc with a selectable layout profile.
+# Collapses the former md2pdf.sh + epub2pdf.sh into one tool.
+#
+# Usage: 2pdf <source> [layout]    (default layout: boox-delight)
+#   <source> may be:
+#     - a Markdown file  (.md / .markdown)
+#     - an EPUB file     (.epub)
+#     - an HTML file     (.html / .htm)
+#     - an http(s) URL   (fetched and treated as HTML)
+#     - a directory      (batch-converts every supported file inside it)
+#
+# Layouts live in ../layouts/pdf/*.yaml and are shared across every input type.
+# Auto-discovery for the selected layout, in this order:
+#   1. ../layouts/pdf/<layout>.tex          -> --include-in-header (absolute path)
+#   2. ../layouts/pdf/lua/*.lua             -> --lua-filter        (applied to every layout)
+#   3. ../layouts/pdf/lua/<layout>/*.lua    -> --lua-filter        (layout-scoped)
+#   4. ../layouts/preprocess/*.sed            -> sed -E over the RAW markdown
+#      source (applied to every layout; shared with 2docx.sh)
+#   5. ../layouts/preprocess/<layout>/*.sed -> sed -E over the RAW markdown
+#      source, before pandoc parses it (markdown/.markdown sources only).
+#      Used for text-level transforms pandoc's AST can't safely express (e.g.
+#      stripping Obsidian [[wikilink]] brackets — pandoc's citation extension
+#      mis-parses a bare "[[@name]]" as a Cite node once one bracket layer is
+#      gone at the AST level, so this must happen on the raw text instead).
+#
+# Before any of the above, markdown sources always go through
+# normalize_line_endings() first (CRLF/bare-CR -> LF) -- every *.sed rule is
+# ^/$-anchored and GNU sed splits records on \n only, so bad line endings
+# silently defeat every one of them (see that function's own comment).
+#
+# Layout-scoped filters keep one layout's quirks (e.g. boox-delight's
+# table-width rebalancing, a4-work's wikilink/HD-number stripping) from
+# leaking into the others.
+
+# Resolve the script's real path via BASH_SOURCE (works for PATH lookup
+# and direct invocation alike) + readlink to follow symlinks. Fall back
+# to dirname-$BASH_SOURCE if readlink is unavailable.
+SCRIPT_PATH="${BASH_SOURCE[0]}"
+if command -v readlink >/dev/null 2>&1; then
+    SCRIPT_PATH="$(readlink -f "$SCRIPT_PATH" 2>/dev/null || echo "$SCRIPT_PATH")"
+fi
+SCRIPT_DIR="$(cd "$(dirname "$SCRIPT_PATH")" && pwd)"
+LAYOUTS_ROOT="$(cd "$SCRIPT_DIR/../layouts" && pwd)"
+PDF_DIR="$LAYOUTS_ROOT/pdf"
+LUA_DIR="$PDF_DIR/lua"
+PREPROCESS_DIR="$LAYOUTS_ROOT/preprocess"
+
+list_layouts() {
+    ls "$PDF_DIR"/*.yaml 2>/dev/null | xargs -n1 basename | sed 's/\.yaml$//'
+}
+
+usage() {
+    echo "Usage: 2pdf <source> [layout]    (default layout: boox-delight)"
+    echo "  <source>: a .md/.markdown, .epub, .html/.htm file, an http(s) URL, or a directory of those"
+    echo "Available layouts:"
+    list_layouts | sed 's/^/  /'
+}
+
+if [ -z "$1" ]; then
+    usage
+    exit 1
+fi
+
+SOURCE="$1"
+LAYOUT="${2:-boox-delight}"
+CONFIG="$PDF_DIR/${LAYOUT}.yaml"
+
+if [ ! -f "$CONFIG" ]; then
+    echo "Error: layout '$LAYOUT' not found at $CONFIG"
+    echo "Available layouts:"
+    list_layouts | sed 's/^/  /'
+    exit 1
+fi
+
+# Raw-text preprocessing scripts: global first, then layout-scoped, mirroring
+# the Lua filter split above. Collected as -f args so sed applies them in order.
+PREPROCESS_ARGS=()
+if [ -d "$PREPROCESS_DIR" ]; then
+    while IFS= read -r -d '' pp; do
+        PREPROCESS_ARGS+=(-f "$pp")
+    done < <(find "$PREPROCESS_DIR" -maxdepth 1 -type f -name '*.sed' ! -name '.*' -print0 | sort -z)
+fi
+LAYOUT_PREPROCESS_DIR="$PREPROCESS_DIR/$LAYOUT"
+if [ -d "$LAYOUT_PREPROCESS_DIR" ]; then
+    while IFS= read -r -d '' pp; do
+        PREPROCESS_ARGS+=(-f "$pp")
+    done < <(find "$LAYOUT_PREPROCESS_DIR" -maxdepth 1 -type f -name '*.sed' ! -name '.*' -print0 | sort -z)
+fi
+
+# Assemble the layout-specific pandoc args once (same for every file converted).
+EXTRA_ARGS=()
+
+TEX_PREAMBLE="$PDF_DIR/${LAYOUT}.tex"
+if [ -f "$TEX_PREAMBLE" ]; then
+    EXTRA_ARGS+=("--include-in-header=$TEX_PREAMBLE")
+fi
+
+# Global Lua filters — apply to every layout.
+if [ -d "$LUA_DIR" ]; then
+    while IFS= read -r -d '' filter; do
+        EXTRA_ARGS+=("--lua-filter=$filter")
+    done < <(find "$LUA_DIR" -maxdepth 1 -type f -name '*.lua' ! -name '.*' -print0 | sort -z)
+fi
+
+# Layout-scoped Lua filters — apply only when this layout is active.
+LAYOUT_LUA_DIR="$LUA_DIR/$LAYOUT"
+if [ -d "$LAYOUT_LUA_DIR" ]; then
+    while IFS= read -r -d '' filter; do
+        EXTRA_ARGS+=("--lua-filter=$filter")
+    done < <(find "$LAYOUT_LUA_DIR" -maxdepth 1 -type f -name '*.lua' ! -name '.*' -print0 | sort -z)
+fi
+
+# Normalize line endings BEFORE any other markdown preprocessing. Every
+# *.sed rule below is ^/$-anchored and GNU sed splits records on \n only --
+# a source with CRLF endings leaves a trailing \r that a rule's trailing $
+# can swallow into captured text, and a source with BARE-CR ("classic Mac")
+# endings has NO \n at all, so sed treats the whole file as one giant line
+# and no ^/$ anchor ever matches past the first/last line. Reproduced
+# 2026-08-19: a pasted Obsidian callout with bare-CR line endings defeated
+# the callout-marker sed rule entirely -- the whole blockquote collapsed
+# into one run-on paragraph with the literal "[!type]" marker text intact.
+# wc -l counts \n bytes, so it's 0 for both an empty/one-line file (nothing
+# to normalize -- tr is still a safe no-op there) and a bare-CR file (every
+# \r IS the line break, so converting each to \n is exactly correct).
+normalize_line_endings() {
+    local src="$1" dst="$2"
+    if [ "$(wc -l < "$src")" -gt 0 ]; then
+        sed $'s/\r$//' "$src" > "$dst"       # CRLF -> LF (strip the leftover \r)
+    else
+        tr '\r' '\n' < "$src" > "$dst"       # bare-CR -> LF
+    fi
+}
+
+# Convert one source (file path or URL) to a sibling/CWD .pdf.
+# Determines pandoc input format + output path from the source, then runs pandoc
+# with the shared layout args. Returns pandoc's exit status.
+convert_one() {
+    local orig="$1" input="$1"
+    local srcfmt="" output tmp_html="" tmp_md="" tmp_norm=""
+    # Local copy of the layout args so URL-only filters never leak to file conversions.
+    local extra=("${EXTRA_ARGS[@]}")
+
+    case "$input" in
+        http://*|https://*)
+            # URL: pandoc cannot key off an extension reliably, so force html.
+            srcfmt="html"
+            local base
+            base="$(basename "${input%%\?*}")"   # drop any query string
+            base="${base%.html}"; base="${base%.htm}"
+            [ -z "$base" ] && base="output"
+            output="./${base}.pdf"
+            # Fetch to a LOCAL temp file before converting. When the input is a
+            # URL, pandoc resolves --include-in-header and image paths relative
+            # to the URL's host, so it would try to fetch our local layout .tex
+            # from the remote server (403) and corrupt the LaTeX preamble.
+            # Converting a local copy makes resource resolution local again.
+            tmp_html="$(mktemp --suffix=.html)"
+            if ! curl -fsSL "$input" -o "$tmp_html"; then
+                echo "Error: failed to fetch '$orig'" >&2
+                rm -f "$tmp_html"
+                return 1
+            fi
+            # Drop images for URL conversions — see url-strip-images.lua.
+            extra+=("--lua-filter=$PDF_DIR/url-strip-images.lua")
+            input="$tmp_html"
+            ;;
+        *.md|*.markdown)
+            output="${input%.*}.pdf"
+            # Pandoc's own markdown dialect (unlike CommonMark/GFM) refuses to
+            # start a list right after a paragraph without a blank line between
+            # them — Obsidian's editor has no such requirement, so notes written
+            # there routinely hit this. Without the extension, "**Tier 1:**\n-
+            # item" renders as one flattened line ("Tier 1: - item") instead of
+            # a bulleted list. Source: reproduced 2026-08-18, `pandoc -f markdown`
+            # vs `-f markdown+lists_without_preceding_blankline` on that exact case.
+            srcfmt="markdown+lists_without_preceding_blankline"
+            tmp_norm="$(mktemp --suffix=.md)"
+            if ! normalize_line_endings "$input" "$tmp_norm"; then
+                echo "Error: line-ending normalization failed for '$orig'" >&2
+                rm -f "$tmp_norm"
+                return 1
+            fi
+            input="$tmp_norm"
+            if [ ${#PREPROCESS_ARGS[@]} -gt 0 ]; then
+                # Raw-text pass BEFORE pandoc parses (see header comment for why:
+                # AST-level Lua filters can't safely undo Obsidian [[wikilinks]]
+                # once pandoc's citation extension has partially consumed one).
+                tmp_md="$(mktemp --suffix=.md)"
+                if ! sed -E "${PREPROCESS_ARGS[@]}" "$input" > "$tmp_md"; then
+                    # Without this check a failing sed (bad regex in one of the
+                    # *.sed files, or a write failure) still leaves whatever
+                    # partial/empty output it managed in $tmp_md, and pandoc
+                    # would silently convert that into a "successful" PDF
+                    # instead of surfacing the real error (code-review finding,
+                    # 2026-08-19).
+                    echo "Error: preprocessing sed pass failed for '$orig'" >&2
+                    rm -f "$tmp_md"
+                    return 1
+                fi
+                input="$tmp_md"
+            fi
+            ;;
+        *.epub)
+            output="${input%.epub}.pdf"          # pandoc auto-detects epub
+            ;;
+        *.html|*.htm)
+            srcfmt="html"
+            output="${input%.*}.pdf"
+            ;;
+        *)
+            echo "Error: unsupported source '$input' (expected .md, .markdown, .epub, .html, .htm, or an http(s) URL)" >&2
+            return 2
+            ;;
+    esac
+
+    local fmt_args=()
+    [ -n "$srcfmt" ] && fmt_args+=(-f "$srcfmt")
+
+    echo "Converting '$orig' -> '$output' (layout: $LAYOUT)"
+    pandoc "$input" "${fmt_args[@]}" -o "$output" -d "$CONFIG" \
+        "${extra[@]}" \
+        --pdf-engine-opt=-interaction=nonstopmode
+    local rc=$?
+    [ -n "$tmp_html" ] && rm -f "$tmp_html"
+    [ -n "$tmp_norm" ] && rm -f "$tmp_norm"
+    [ -n "$tmp_md" ] && rm -f "$tmp_md"
+    return $rc
+}
+
+# URL source — single conversion only (no directory semantics for URLs).
+case "$SOURCE" in
+    http://*|https://*)
+        convert_one "$SOURCE"
+        exit $?
+        ;;
+esac
+
+# Directory source — batch-convert every supported file inside it.
+if [ -d "$SOURCE" ]; then
+    shopt -s nullglob
+    files=("$SOURCE"/*.md "$SOURCE"/*.markdown "$SOURCE"/*.epub "$SOURCE"/*.html "$SOURCE"/*.htm)
+    shopt -u nullglob
+    if [ ${#files[@]} -eq 0 ]; then
+        echo "Error: no supported files (.md/.markdown/.epub/.html/.htm) found in directory '$SOURCE'" >&2
+        exit 1
+    fi
+    echo "Converting ${#files[@]} file(s) in directory '$SOURCE'"
+    status=0
+    for f in "${files[@]}"; do
+        convert_one "$f" || status=$?
+    done
+    exit $status
+fi
+
+# Single file source.
+if [ ! -f "$SOURCE" ]; then
+    echo "Error: '$SOURCE' not found (expected a file, directory, or http(s) URL)" >&2
+    exit 1
+fi
+
+convert_one "$SOURCE"

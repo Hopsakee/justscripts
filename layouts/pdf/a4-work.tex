@@ -1,0 +1,120 @@
+% a4-work.tex — preamble for the a4-work pandoc layout.
+% Loaded via `include-in-header` from a4-work.yaml (auto-discovered by 2pdf.sh).
+% Formal A4 output for sharing with WDODelta colleagues and management.
+%
+% Styled to the WDODelta huisstijl (official house style, June 2021):
+% donkerblauw #075895 for headings/links/footer, blauw #00b0ea as a single
+% restrained accent (title rule only), Carlito as the Calibri-compatible
+% fallback font (Vivala Sans Rounded is proprietary and unavailable here),
+% near-black body text (#1a1a1a), footer contact line. No logo — the huisstijl
+% doc marks the raster preview asset "niet voor productie"; only the official
+% SVG (request via Afdeling Communicatie) belongs in production documents.
+
+\usepackage{xcolor}
+\definecolor{wdoddark}{HTML}{075895}
+\definecolor{wdodaccent}{HTML}{00b0ea}
+\definecolor{wdodtext}{HTML}{1a1a1a}
+
+% Carlito is missing a glyph for U+2011 (non-breaking hyphen), which shows up
+% in Dutch compound words (e.g. "Epic‑bord", "T‑shirt‑sizing") and rendered as
+% a boxed replacement character. Map it to a regular hyphen wrapped in \mbox
+% so it still doesn't break across a line — same visual + behavior Jelle asked
+% for ("that should be a -"). Add further \newunicodechar lines here if other
+% source documents surface more Carlito glyph gaps.
+\usepackage{newunicodechar}
+\newunicodechar{‑}{\mbox{-}}
+
+\usepackage{titlesec}
+
+% Heading hierarchy with 11pt body — v2 (2026-07-28, widened on Jelle's feedback:
+% "font size differences between headings should be larger, level 1/2/3/4 not
+% clearly distinguishable"). Explicit \fontsize{size}{baselineskip} instead of
+% LaTeX's built-in \LARGE/\Large/\large steps, whose default increments are too
+% small (17.28/14.4/12.0pt) to read as a confident staircase.
+%   H1 (\section)       — 26pt, bold, wdoddark, accent rule beneath
+%   H2 (\subsection)    — 19pt, bold, wdoddark
+%   H3 (\subsubsection) — 15pt, bold, wdoddark
+%   H4 (\paragraph)     — 12.5pt, bold, wdoddark, own block line (not run-in)
+%   Body                — 11.0pt, wdodtext (near-black, not pure black)
+%
+% Gaps: H1→H2 = 7pt (37%), H2→H3 = 4pt (27%), H3→H4 = 2.5pt (20%), H4→body = 1.5pt (14%)
+% Each step widens going up — mirrors how a reader scans top-down for structure.
+% All bold — weight adds to size to make each level unmistakable at a glance.
+% Restraint per huisstijl ("beperk het aantal huisstijlkleuren per scherm"):
+% only wdoddark carries headings/links; wdodaccent is reserved for the H1 rule
+% and the callout box's left bar (wdocallout, below) — no other use of it.
+
+\titleformat{\section}
+  {\normalfont\fontsize{26}{31}\selectfont\bfseries\color{wdoddark}}{\thesection}{0.6em}{}[\vspace{2pt}{\color{wdodaccent}\titlerule[1.2pt]}]
+
+\titleformat{\subsection}
+  {\normalfont\fontsize{19}{23}\selectfont\bfseries\color{wdoddark}}{\thesubsection}{0.6em}{}
+
+\titleformat{\subsubsection}
+  {\normalfont\fontsize{15}{18}\selectfont\bfseries\color{wdoddark}}{\thesubsubsection}{0.6em}{}
+
+\titleformat{\paragraph}
+  {\normalfont\fontsize{12.5}{15}\selectfont\bfseries\color{wdoddark}}{\theparagraph}{0.6em}{}
+
+% Vertical spacing — generous above headings, tight below. Scaled up with the
+% larger font sizes so whitespace stays proportional to the new staircase.
+% Format: {left}{space above}{space below}
+\titlespacing*{\section}
+  {0pt}{2.6ex plus 0.6ex minus 0.4ex}{1.0ex plus 0.2ex}
+\titlespacing*{\subsection}
+  {0pt}{2.0ex plus 0.5ex minus 0.3ex}{0.8ex plus 0.2ex}
+\titlespacing*{\subsubsection}
+  {0pt}{1.6ex plus 0.4ex minus 0.2ex}{0.6ex plus 0.2ex}
+\titlespacing*{\paragraph}
+  {0pt}{1.3ex plus 0.3ex minus 0.2ex}{0.5ex plus 0.1ex}
+
+% Body text: near-black per huisstijl (#1a1a1a), not pure black.
+\AtBeginDocument{\color{wdodtext}}
+
+% Callout box — target of lua/a4-work/callouts.lua (Obsidian callouts).
+% One sober style for every callout type, per huisstijl restraint ("beperk
+% het aantal huisstijlkleuren per scherm"): a very light tint of the accent
+% blue as background arcering plus a 3pt accent bar on the left. breakable
+% so a callout can cross a page boundary without clipping.
+\usepackage{tcolorbox}
+\tcbuselibrary{breakable,skins}
+\definecolor{wdodcalloutbg}{HTML}{EAF6FC}
+
+% Shared skeleton for both box variants below — breakable/enhanced/frameless
+% plumbing is identical; only colour, bar weight, corner, and padding differ.
+\tcbset{wdocbase/.style={breakable, enhanced, frame hidden, boxrule=0pt}}
+
+\newtcolorbox{wdocallout}{
+  wdocbase, arc=1.5pt,
+  colback=wdodcalloutbg,
+  borderline west={3pt}{0pt}{wdodaccent},
+  left=10pt, right=10pt, top=7pt, bottom=7pt,
+  before skip=10pt, after skip=10pt
+}
+
+% Plain blockquotes ("> tekst" with no "[!type]" marker) fall straight through
+% the Lua filter above untouched — it only boxes real Obsidian callouts. Left
+% at LaTeX's built-in `quote` environment, that renders as a bare indent with
+% no frame at all ("indent maar geen kader", Jelle 2026-08-18). Obsidian's own
+% editor gives every blockquote a left bar regardless of a [!type] marker, so
+% readers expect one here too. Quiet, uncoloured bar — lighter than
+% wdocallout's tinted box — keeps the two visually distinct: a callout is a
+% highlighted note, a plain quote is a quiet aside.
+\newtcolorbox{wdocquote}{
+  wdocbase, arc=0pt,
+  colback=white,
+  borderline west={2pt}{0pt}{wdoddark!45},
+  left=10pt, right=6pt, top=5pt, bottom=5pt,
+  before skip=8pt, after skip=8pt
+}
+\renewenvironment{quote}{\begin{wdocquote}}{\end{wdocquote}}
+
+% Footer — org name + page number, satisfying the huisstijl Self-Check
+% "footer/contact reference" rule. No header (no logo asset to place there).
+\usepackage{fancyhdr}
+\pagestyle{fancy}
+\fancyhf{}
+\renewcommand{\headrulewidth}{0pt}
+\renewcommand{\footrulewidth}{0.4pt}
+\fancyfoot[L]{\small\color{wdoddark}Waterschap Drents Overijsselse Delta (WDODelta)}
+\fancyfoot[R]{\small\color{wdoddark}\thepage}

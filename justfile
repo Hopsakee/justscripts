@@ -33,11 +33,15 @@ run SCRIPT *ARGS:
 resize-images factor *files:
   cd {{invocation_directory_native()}} && uv run '{{home_dir()}}/justscripts/scripts/resize_images.py' {{factor}} {{files}}
 
-# Convert a Markdown file to PDF
-# Usage: just md2pdf <file.md>
-md2pdf FILE:
-  {{home_dir()}}/justscripts/scripts/md2pdf.sh "{{FILE}}"
+# Convert any source (Markdown, EPUB, HTML file, or http(s) URL) to PDF with a selectable layout.
+# Also accepts a directory: batch-converts every supported file inside it.
+# (Recipe name is "to-pdf" because just recipe names cannot start with a digit; the script is 2pdf.sh.)
+# Usage: just to-pdf <file|url|dir> [layout]    (default: boox-delight)
+# Available layouts: boox-delight (default), boox, a4-work, a4-personal
+to-pdf SOURCE LAYOUT="boox-delight":
+  {{home_dir()}}/justscripts/scripts/2pdf.sh "{{SOURCE}}" "{{LAYOUT}}"
 
+<<<<<<< HEAD
 # Convert a epub file to PDF
 # Usage: just epub2pdf <file.epub>
 # Usage: just epub2pdf <directory>
@@ -49,3 +53,26 @@ epub2pdf ARG:
 # Usage: just to-md <directory>
 to-md ARG:
   {{home_dir()}}/justscripts/scripts/to-md.sh "{{ARG}}"
+=======
+# Convert a Markdown source to DOCX using a layout's reference template.
+# (Recipe name is "to-docx" to match "to-pdf"; the script is 2docx.sh. Separate
+# script from 2pdf.sh -- DOCX and PDF are different pipelines, not a shared flag.)
+# Usage: just to-docx <file.md> <layout>
+# Available layouts: a4-work (only one with a docx reference template so far)
+to-docx SOURCE LAYOUT:
+  {{home_dir()}}/justscripts/scripts/2docx.sh "{{SOURCE}}" "{{LAYOUT}}"
+
+# Extract a PDF to <name>_text.md via pymupdf4llm (Tier 1)
+# Usage: just pdf-extract <file.pdf> [--force] [--dry-run]
+pdf-extract PDF *FLAGS:
+  uv run '{{home_dir()}}/justscripts/scripts/pdf_extract.py' "{{PDF}}" {{FLAGS}}
+
+# Fetch your YouTube Watch Later playlist to watch-later-<date>.md
+# Reads cookies from a browser you are signed into YouTube on, so it must run
+# interactively on your own machine -- on macOS the Keychain prompt means this
+# CANNOT be scheduled. Pass the browser you actually use; "firefox" is only
+# yt-dlp's default.
+# Usage: just watch-later [browser] [out-dir]
+watch-later BROWSER="firefox" OUT_DIR=".":
+  uv run '{{home_dir()}}/justscripts/scripts/fetch_watch_later.py' --browser "{{BROWSER}}" --out-dir "{{OUT_DIR}}"
+>>>>>>> aefb9cd3fc1a3517391fc9ad667bfba81cccc734
