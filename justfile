@@ -37,15 +37,10 @@ resize-images factor *files:
 # Also accepts a directory: batch-converts every supported file inside it.
 # (Recipe name is "to-pdf" because just recipe names cannot start with a digit; the script is 2pdf.sh.)
 # Usage: just to-pdf <file|url|dir> [layout]    (default: boox-delight)
+# Handles .epub too — 2pdf.sh absorbed the former epub2pdf.sh, whose recipe is gone.
 # Available layouts: boox-delight (default), boox, a4-work, a4-personal
 to-pdf SOURCE LAYOUT="boox-delight":
   {{home_dir()}}/justscripts/scripts/2pdf.sh "{{SOURCE}}" "{{LAYOUT}}"
-
-# Convert a epub file to PDF
-# Usage: just epub2pdf <file.epub>
-# Usage: just epub2pdf <directory>
-epub2pdf ARG:
-  {{home_dir()}}/justscripts/scripts/epub2pdf.sh "{{ARG}}"
 
 # Convert a epub file to markdown
 # Usage: just to-md <file.epub>
